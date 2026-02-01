@@ -28,7 +28,7 @@ class FHEGBDTClient:
     def predict_encrypted(self, compiled_model_id: str, features: List[Dict[str, float]]) -> List[float]:
         """Runs end-to-end encrypted inference."""
         # 1. KeyGen (if needed)
-        if not self.key_manager.secret_key:
+        if not self.key_manager._secret_key:
             self.key_manager.generate_key()
             
         # 2. Encrypt
