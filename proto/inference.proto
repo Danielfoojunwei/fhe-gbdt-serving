@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package inference;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/inference";
+
+service InferenceService {
+  rpc Predict(PredictRequest) returns (PredictResponse);
+}
+
+message PredictRequest {
+  string tenant_id = 1;
+  string compiled_model_id = 2;
+  string profile = 3; // latency | throughput
+  CiphertextBatch batch = 4;
+  map<string, string> meta = 5;
+}
+
+message CiphertextBatch {
+  string scheme_id = 1;
+  uint32 batch_size = 2;
+  string packing_layout_id = 3;
+  bytes payload = 4;
+  repeated string feature_names = 5;
+}
+
+message PredictResponse {
+  CiphertextBatch outputs = 1;
+  RuntimeStats stats = 2;
+}
+
+message RuntimeStats {
+  uint64 comparisons = 1;
+  uint64 scheme_switches = 2;
+  uint64 bootstraps = 3;
+  uint64 rotations = 4;
+  double runtime_ms = 5;
+}

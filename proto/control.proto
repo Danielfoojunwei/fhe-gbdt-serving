@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package control;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/control";
+
+service ControlService {
+  rpc RegisterModel(RegisterModelRequest) returns (RegisterModelResponse);
+  rpc CompileModel(CompileModelRequest) returns (CompileModelResponse);
+  rpc GetCompileStatus(GetCompileStatusRequest) returns (GetCompileStatusResponse);
+}
+
+message RegisterModelRequest {
+  string tenant_id = 1;
+  string model_name = 2;
+  bytes model_content = 3;
+  string library_type = 4; // xgboost | lightgbm | catboost
+}
+
+message RegisterModelResponse {
+  string model_id = 1;
+}
+
+message CompileModelRequest {
+  string model_id = 1;
+  string profile = 2; // latency | throughput
+}
+
+message CompileModelResponse {
+  string compiled_model_id = 1;
+}
+
+message GetCompileStatusRequest {
+  string compiled_model_id = 1;
+}
+
+message GetCompileStatusResponse {
+  string status = 1;
+  string plan_id = 2;
+  string error_message = 3;
+}

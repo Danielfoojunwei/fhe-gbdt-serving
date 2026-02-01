@@ -1,0 +1,56 @@
+# Default values for fhe-gbdt-serving
+replicaCount:
+  gateway: 2
+  runtime_cpu: 2
+  runtime_gpu: 1
+  registry: 1
+  keystore: 1
+
+image:
+  repository: ghcr.io/fhe-gbdt
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+resources:
+  gateway:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  runtime_cpu:
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+    limits:
+      cpu: 8000m
+      memory: 16Gi
+  runtime_gpu:
+    requests:
+      cpu: 2000m
+      memory: 8Gi
+      nvidia.com/gpu: 1
+    limits:
+      cpu: 8000m
+      memory: 32Gi
+      nvidia.com/gpu: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetQueueDepth: 50
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+mtls:
+  enabled: true
+  secretName: fhe-gbdt-mtls
+
+canary:
+  enabled: false
+  weight: 10

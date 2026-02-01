@@ -1,0 +1,82 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default-receiver'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'pager-receiver'
+
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'oncall@example.com'
+        send_resolved: true
+
+  - name: 'pager-receiver'
+    pagerduty_configs:
+      - service_key: '<PAGERDUTY_KEY>'
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname']
+
+# Prometheus Alerting Rules (typically in a separate file, included here for reference)
+# Place in alerts/rules.yml
+---
+# alerts/rules.yml
+groups:
+  - name: fhe-gbdt-slo
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(gateway_request_errors_total[5m])) / sum(rate(gateway_request_total[5m])) > 0.005
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on FHE-GBDT Gateway"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5m."
+
+      - alert: LatencyP95Breach
+        expr: histogram_quantile(0.95, sum(rate(gateway_request_latency_ms_bucket[5m])) by (le)) > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency SLO breach"
+          description: "P95 latency is {{ $value }}ms, exceeding 100ms target."
+
+      - alert: LatencyP99Breach
+        expr: histogram_quantile(0.99, sum(rate(gateway_request_latency_ms_bucket[5m])) by (le)) > 200
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "P99 latency SLO breach"
+          description: "P99 latency is {{ $value }}ms, exceeding 200ms target."
+
+      - alert: HighQueueDepth
+        expr: runtime_queue_depth_gauge > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High queue depth in Runtime"
+          description: "Queue depth is {{ $value }}, exceeding threshold of 100."
+
+      - alert: CPUSaturation
+        expr: avg(rate(process_cpu_seconds_total[5m])) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU saturation detected"
+          description: "CPU usage is above 90% for 10 minutes."

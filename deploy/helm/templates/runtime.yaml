@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-runtime-cpu
+  labels:
+    app: runtime
+    pool: cpu
+spec:
+  replicas: {{ .Values.replicaCount.runtime_cpu }}
+  selector:
+    matchLabels:
+      app: runtime
+      pool: cpu
+  template:
+    metadata:
+      labels:
+        app: runtime
+        pool: cpu
+    spec:
+      containers:
+      - name: runtime
+        image: "{{ .Values.image.repository }}/runtime:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 9000
+        resources:
+          {{- toYaml .Values.resources.runtime_cpu | nindent 10 }}
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:9000"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:9000"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-runtime-gpu
+  labels:
+    app: runtime
+    pool: gpu
+spec:
+  replicas: {{ .Values.replicaCount.runtime_gpu }}
+  selector:
+    matchLabels:
+      app: runtime
+      pool: gpu
+  template:
+    metadata:
+      labels:
+        app: runtime
+        pool: gpu
+    spec:
+      containers:
+      - name: runtime
+        image: "{{ .Values.image.repository }}/runtime-gpu:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 9000
+        resources:
+          {{- toYaml .Values.resources.runtime_gpu | nindent 10 }}

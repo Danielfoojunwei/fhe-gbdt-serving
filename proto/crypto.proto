@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package crypto;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/crypto";
+
+service CryptoKeyService {
+  rpc UploadEvalKeys(UploadEvalKeysRequest) returns (UploadEvalKeysResponse);
+  rpc RotateKeys(RotateKeysRequest) returns (RotateKeysResponse);
+  rpc RevokeKeys(RevokeKeysRequest) returns (RevokeKeysResponse);
+}
+
+message UploadEvalKeysRequest {
+  string tenant_id = 1;
+  string compiled_model_id = 2;
+  bytes eval_keys = 3;
+}
+
+message UploadEvalKeysResponse {
+  bool success = 1;
+}
+
+message RotateKeysRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+}
+
+message RotateKeysResponse {
+  bool success = 1;
+}
+
+message RevokeKeysRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+}
+
+message RevokeKeysResponse {
+  bool success = 1;
+}

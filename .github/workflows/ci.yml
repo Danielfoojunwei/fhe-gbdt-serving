@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Build
+      run: make build
+    - name: Test
+      run: make test
+    - name: Run Security Scan
+      run: bash fhe-gbdt-serving/scripts/security_scan.sh
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check for forbidden logging patterns
+      run: |
+        echo "Checking for forbidden logging patterns..."
+        FORBIDDEN="payload|ciphertext|plaintext|secret_key|eval_key"
+        if grep -rEi "(log\.|print\(|fmt\.Print).*(${FORBIDDEN})" services/ sdk/ --include="*.go" --include="*.py"; then
+          echo "FAILED: Forbidden logging patterns detected!"
+          exit 1
+        fi
+        echo "PASSED: No forbidden logging patterns found."
+    - name: Run no-plaintext-logs unit test
+      run: |
+        cd fhe-gbdt-serving
+        python -m pytest tests/unit/test_no_plaintext_logs.py -v
+
+  cookbook-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        pip install xgboost lightgbm catboost scikit-learn mdutils requests pytest
+    - name: Run Cookbook E2E Tests
+      run: |
+        cd fhe-gbdt-serving
+        python -m pytest tests/e2e/real_models/

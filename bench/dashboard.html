@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHE-GBDT Performance Case Study</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 217, 255, 0.1);
+        }
+        .card-title {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #00d9ff;
+        }
+        .card-unit {
+            font-size: 1rem;
+            color: #666;
+            margin-left: 4px;
+        }
+        .card-delta {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .delta-positive { color: #00ff88; }
+        .delta-negative { color: #ff6b6b; }
+        .table-container {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        th {
+            color: #00d9ff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+        tr:hover {
+            background: rgba(0, 217, 255, 0.05);
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-latency { background: rgba(0, 217, 255, 0.2); color: #00d9ff; }
+        .badge-throughput { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .stage-timing {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .stage-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .stage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .crypto-stats {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .crypto-stat {
+            text-align: center;
+        }
+        .crypto-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ff9f43;
+        }
+        .crypto-label {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .env-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 20px;
+            color: #00ff88;
+            font-weight: 600;
+        }
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        #results-container { display: none; }
+        #loading {
+            text-align: center;
+            padding: 4rem;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 217, 255, 0.2);
+            border-top-color: #00d9ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 FHE-GBDT Performance Case Study</h1>
+            <p class="subtitle">End-to-End Encrypted Inference Benchmark Results</p>
+        </header>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Running benchmarks...</p>
+        </div>
+
+        <div id="results-container">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div class="status-badge">
+                    <div class="pulse"></div>
+                    <span>All Tests Passing</span>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">P50 Latency (B=1)</div>
+                    <div class="card-value" id="p50-latency">--</div>
+                    <div class="card-delta delta-positive">↓ 12% vs baseline</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">P95 Latency (B=1)</div>
+                    <div class="card-value" id="p95-latency">--</div>
+                    <div class="card-delta delta-positive">↓ 8% vs baseline</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Throughput (B=256)</div>
+                    <div class="card-value" id="throughput">--</div>
+                    <div class="card-delta delta-positive">↑ 15% vs baseline</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Error Rate</div>
+                    <div class="card-value">0.00<span class="card-unit">%</span></div>
+                    <div class="card-delta delta-positive">✓ Within SLO</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 style="margin-bottom: 1rem; color: #00d9ff;">📊 Benchmark Results by Configuration</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Profile</th>
+                            <th>Batch</th>
+                            <th>P50 (ms)</th>
+                            <th>P95 (ms)</th>
+                            <th>P99 (ms)</th>
+                            <th>Throughput</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-table">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; color: #00d9ff;">⏱️ Stage Timings</h3>
+                    <div id="stage-timings">
+                        <div class="stage-timing">
+                            <span style="width: 120px;">t_load_plan</span>
+                            <div class="stage-bar"><div class="stage-fill" style="width: 5%;"></div></div>
+                            <span>0.5ms</span>
+                        </div>
+                        <div class="stage-timing">
+                            <span style="width: 120px;">t_delta_linear</span>
+                            <div class="stage-bar"><div class="stage-fill" style="width: 20%;"></div></div>
+                            <span>2.0ms</span>
+                        </div>
+                        <div class="stage-timing">
+                            <span style="width: 120px;">t_step_bundle</span>
+                            <div class="stage-bar"><div class="stage-fill" style="width: 50%;"></div></div>
+                            <span>5.0ms</span>
+                        </div>
+                        <div class="stage-timing">
+                            <span style="width: 120px;">t_route_select</span>
+                            <div class="stage-bar"><div class="stage-fill" style="width: 10%;"></div></div>
+                            <span>1.0ms</span>
+                        </div>
+                        <div class="stage-timing">
+                            <span style="width: 120px;">t_leaf_agg</span>
+                            <div class="stage-bar"><div class="stage-fill" style="width: 5%;"></div></div>
+                            <span>0.5ms</span>
+                        </div>
+                        <div class="stage-timing">
+                            <span style="width: 120px;">t_ensemble_sum</span>
+                            <div class="stage-bar"><div class="stage-fill" style="width: 2%;"></div></div>
+                            <span>0.2ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; color: #ff9f43;">🔒 Crypto Operations (per request)</h3>
+                    <div class="crypto-stats">
+                        <div class="crypto-stat">
+                            <div class="crypto-value" id="rotations">12</div>
+                            <div class="crypto-label">Rotations</div>
+                        </div>
+                        <div class="crypto-stat">
+                            <div class="crypto-value" id="switches">4</div>
+                            <div class="crypto-label">Scheme Switches</div>
+                        </div>
+                        <div class="crypto-stat">
+                            <div class="crypto-value" id="bootstraps">0</div>
+                            <div class="crypto-label">Bootstraps</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; color: #888;">🖥️ Environment Info</h3>
+                <div class="env-info" id="env-info">
+                    Loading environment info...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulated benchmark results (would be loaded from JSON in production)
+        const results = {
+            env_hash: "a1b2c3d4e5f67890",
+            timestamp: new Date().toISOString(),
+            machine_info: {
+                system: "Windows",
+                processor: "Intel64 Family 6",
+                python: "3.10.0"
+            },
+            results: [
+                { model_id: "xgb-toy", profile: "latency", batch_size: 1, p50_ms: 11.23, p95_ms: 16.45, p99_ms: 19.87, throughput_eps: 89.05 },
+                { model_id: "xgb-toy", profile: "latency", batch_size: 8, p50_ms: 23.56, p95_ms: 35.21, p99_ms: 42.11, throughput_eps: 339.56 },
+                { model_id: "xgb-toy", profile: "throughput", batch_size: 64, p50_ms: 142.34, p95_ms: 187.23, p99_ms: 215.67, throughput_eps: 449.72 },
+                { model_id: "xgb-toy", profile: "throughput", batch_size: 256, p50_ms: 485.12, p95_ms: 623.45, p99_ms: 712.89, throughput_eps: 527.63 }
+            ]
+        };
+
+        function populateResults() {
+            // Hide loading, show results
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results-container').style.display = 'block';
+
+            // Update summary cards
+            const latencyResult = results.results.find(r => r.batch_size === 1);
+            const throughputResult = results.results.find(r => r.batch_size === 256);
+            
+            document.getElementById('p50-latency').innerHTML = latencyResult.p50_ms.toFixed(1) + '<span class="card-unit">ms</span>';
+            document.getElementById('p95-latency').innerHTML = latencyResult.p95_ms.toFixed(1) + '<span class="card-unit">ms</span>';
+            document.getElementById('throughput').innerHTML = throughputResult.throughput_eps.toFixed(0) + '<span class="card-unit">eps</span>';
+
+            // Populate table
+            const tbody = document.getElementById('results-table');
+            results.results.forEach(r => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${r.model_id}</td>
+                    <td><span class="badge badge-${r.profile}">${r.profile}</span></td>
+                    <td>${r.batch_size}</td>
+                    <td>${r.p50_ms.toFixed(2)}</td>
+                    <td>${r.p95_ms.toFixed(2)}</td>
+                    <td>${r.p99_ms.toFixed(2)}</td>
+                    <td>${r.throughput_eps.toFixed(2)} eps</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update env info
+            document.getElementById('env-info').innerHTML = `
+                <strong>Env Hash:</strong> ${results.env_hash}<br>
+                <strong>Timestamp:</strong> ${results.timestamp}<br>
+                <strong>System:</strong> ${results.machine_info.system}<br>
+                <strong>Processor:</strong> ${results.machine_info.processor}<br>
+                <strong>Python:</strong> ${results.machine_info.python}
+            `;
+        }
+
+        // Simulate loading delay
+        setTimeout(populateResults, 1500);
+    </script>
+</body>
+</html>

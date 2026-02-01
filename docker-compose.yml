@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - KEYSTORE_URL=http://keystore:8081
+      - REGISTRY_URL=http://registry:8082
+      - RUNTIME_URL=http://runtime:9000
+    depends_on:
+      - keystore
+      - registry
+      - runtime
+
+  keystore:
+    build:
+      context: .
+      dockerfile: services/keystore/Dockerfile
+    ports:
+      - "8081:8081"
+
+  registry:
+    build:
+      context: .
+      dockerfile: services/registry/Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+
+  runtime:
+    build:
+      context: .
+      dockerfile: services/runtime/Dockerfile
+    ports:
+      - "9000:9000"
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fhe_gbdt
+    ports:
+      - "5432:5432"
+
+  minio:
+    image: minio/minio
+    command: server /data
+    ports:
+      - "9001:9000"
+      - "9002:9001"

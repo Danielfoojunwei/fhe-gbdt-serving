@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  gateway:
+    build: ./fhe-gbdt-serving/services/gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - registry
+      - keystore
+      - runtime
+
+  compiler:
+    build: ./fhe-gbdt-serving/services/compiler
+    ports:
+      - "5000:5000"
+
+  runtime:
+    build: ./fhe-gbdt-serving/services/runtime
+    ports:
+      - "50051:50051"
+
+  registry:
+    build: ./fhe-gbdt-serving/services/registry
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgres://user:pass@postgres:5432/registry
+
+  keystore:
+    build: ./fhe-gbdt-serving/services/keystore
+    ports:
+      - "8082:8082"
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: registry
+    ports:
+      - "5432:5432"
+
+  minio:
+    image: minio/minio
+    command: server /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin

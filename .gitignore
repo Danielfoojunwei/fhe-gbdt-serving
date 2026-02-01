@@ -1,0 +1,27 @@
+# FHE-GBDT Serving Ignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+bench/reports/
+!bench/reports/cookbook/example/combined.md
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+bin/
+obj/
+out/
+
+# C++ Build
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile (if generated)
+
+# Problematic file
+*Lion implementation.*
