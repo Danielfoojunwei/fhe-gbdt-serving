@@ -38,7 +38,24 @@ public:
 
     std::shared_ptr<Ciphertext> Sub(const Ciphertext& a, const Ciphertext& b) override {
         auto res = std::make_shared<Ciphertext>();
-        // Similar to Add but with subtraction logic
+        res->scheme_id = scheme_id_;
+        res->is_rlwe = a.is_rlwe;
+
+        if (a.is_rlwe) {
+            res->rlwe_data = a.rlwe_data;
+            // Native N2HE subtraction for RLWE
+            for (size_t i = 0; i < a.rlwe_data.size(); ++i) {
+                for (size_t j = 0; j < a.rlwe_data[i].size(); ++j) {
+                    res->rlwe_data[i][j] = (a.rlwe_data[i][j] - b.rlwe_data[i][j] + q_) % q_;
+                }
+            }
+        } else {
+            // LWE subtraction
+            res->lwe_data = a.lwe_data;
+            for (size_t i = 0; i < a.lwe_data.size(); ++i) {
+                res->lwe_data[i] = (a.lwe_data[i] - b.lwe_data[i] + q_) % q_;
+            }
+        }
         return res;
     }
 

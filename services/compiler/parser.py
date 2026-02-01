@@ -42,9 +42,10 @@ class XGBoostParser(BaseParser):
                         left_child=None,
                         right_child=None,
                         is_leaf=True,
-                        leaf_value=conditions[node_idx], # For leaf, condition is usually the value
+                        leaf_value=leaf_values[node_idx],  # Use base_weights for leaf value
                         depth=depth
                     )
+
                 
                 feat_idx = indices[node_idx]
                 max_feature_id = max(max_feature_id, feat_idx)
