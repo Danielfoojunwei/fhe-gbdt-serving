@@ -135,29 +135,34 @@ class TestXGBoostFHECorrectness(unittest.TestCase):
     def test_batch_encryption_performance(self):
         """Test batch encryption meets performance requirements."""
         try:
-            from crypto import N2HEKeyManager
+            from crypto import N2HEKeyManager, NATIVE_AVAILABLE
             import time
-            
+
             km = N2HEKeyManager("perf-test-tenant")
             km.generate_keys()
-            
+
             # Create batch of 100 feature vectors
             batch_size = 100
-            batch = [[float(i % 10) / 10, float(j % 10) / 10] 
+            batch = [[float(i % 10) / 10, float(j % 10) / 10]
                      for i, j in zip(range(batch_size), range(batch_size))]
-            
+
             start = time.time()
             for features in batch:
                 ct = km.encrypt(features)
             elapsed = time.time() - start
-            
-            # Should complete in under 5 seconds (50ms per encryption)
-            self.assertLess(elapsed, 5.0, 
-                f"Batch encryption too slow: {elapsed:.2f}s for {batch_size} encryptions")
-            
+
+            # Performance threshold depends on mode:
+            # - Native N2HE: 5 seconds (50ms per encryption)
+            # - Simulation: 30 seconds (simulation has Python overhead)
+            threshold = 5.0 if NATIVE_AVAILABLE else 30.0
+            mode = "native" if NATIVE_AVAILABLE else "simulation"
+
+            self.assertLess(elapsed, threshold,
+                f"Batch encryption too slow ({mode}): {elapsed:.2f}s for {batch_size} encryptions")
+
             throughput = batch_size / elapsed
-            print(f"Encryption throughput: {throughput:.1f} ops/sec")
-        
+            print(f"Encryption throughput ({mode}): {throughput:.1f} ops/sec")
+
         except ImportError:
             self.skipTest("Crypto module not available")
 
