@@ -12,10 +12,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"github.com/fhe-gbdt-serving/services/gateway/auth"
+	"github.com/fhe-gbdt-serving/services/gateway/interceptors"
 	pb_ctrl "github.com/fhe-gbdt-serving/proto/control"
 	inf_pb "github.com/fhe-gbdt-serving/proto/inference"
 	"go.opentelemetry.io/otel"
 )
+
 
 type gatewayServer struct {
 	inf_pb.UnimplementedInferenceServiceServer
@@ -82,9 +84,15 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	
-	// Create server with auth interceptor
+	// Create rate limiter: 100 requests/second per tenant, burst of 200
+	rateLimiter := interceptors.NewRateLimiter(100, 200)
+	
+	// Create server with chained interceptors: rate limit -> auth
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(auth.AuthInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			interceptors.RateLimitInterceptor(rateLimiter),
+			auth.AuthInterceptor(),
+		),
 	)
 	
 	server := &gatewayServer{}
@@ -104,9 +112,10 @@ func main() {
 	}
 	
 	inf_pb.RegisterInferenceServiceServer(s, server)
-	log.Printf("Production Gateway Service listening at %v", lis.Addr())
+	log.Printf("Production Gateway Service listening at %v (rate limit: 100 req/s/tenant)", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+
 }
 
