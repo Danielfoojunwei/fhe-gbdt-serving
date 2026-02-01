@@ -19,12 +19,15 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+    - name: Install Python dependencies
+      run: |
+        pip install pytest pytest-cov hypothesis numpy grpcio grpcio-tools bandit flake8
     - name: Build
       run: make build
     - name: Test
       run: make test
     - name: Run Security Scan
-      run: bash fhe-gbdt-serving/scripts/security_scan.sh
+      run: bash scripts/security_scan.sh
     - name: Generate SBOM
       uses: anchore/sbom-action@v0
       with:
@@ -35,6 +38,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install Python dependencies
+      run: |
+        pip install pytest hypothesis
     - name: Check for forbidden logging patterns
       run: |
         echo "Checking for forbidden logging patterns..."
@@ -46,7 +56,6 @@ jobs:
         echo "PASSED: No forbidden logging patterns found."
     - name: Run no-plaintext-logs unit test
       run: |
-        cd fhe-gbdt-serving
         python -m pytest tests/unit/test_no_plaintext_logs.py -v
 
   cookbook-tests:
@@ -59,8 +68,37 @@ jobs:
         python-version: '3.10'
     - name: Install dependencies
       run: |
-        pip install xgboost lightgbm catboost scikit-learn mdutils requests pytest
+        pip install pytest hypothesis numpy xgboost lightgbm catboost scikit-learn mdutils requests
     - name: Run Cookbook E2E Tests
       run: |
-        cd fhe-gbdt-serving
-        python -m pytest tests/e2e/real_models/
+        python -m pytest tests/e2e/real_models/ -v
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        pip install pytest hypothesis numpy xgboost lightgbm catboost scikit-learn grpcio grpcio-tools
+    - name: Run Integration Tests
+      run: |
+        python -m pytest tests/integration/test_ai_engineer_workflow.py -v
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        pip install pytest hypothesis numpy
+    - name: Run Unit Tests
+      run: |
+        python -m pytest tests/unit/ -v
