@@ -13,10 +13,12 @@ import (
 	"google.golang.org/grpc/status"
 	"github.com/fhe-gbdt-serving/services/gateway/auth"
 	"github.com/fhe-gbdt-serving/services/gateway/interceptors"
+	"github.com/fhe-gbdt-serving/services/gateway/mtls"
 	pb_ctrl "github.com/fhe-gbdt-serving/proto/control"
 	inf_pb "github.com/fhe-gbdt-serving/proto/inference"
 	"go.opentelemetry.io/otel"
 )
+
 
 
 type gatewayServer struct {
@@ -87,13 +89,38 @@ func main() {
 	// Create rate limiter: 100 requests/second per tenant, burst of 200
 	rateLimiter := interceptors.NewRateLimiter(100, 200)
 	
-	// Create server with chained interceptors: rate limit -> auth
-	s := grpc.NewServer(
+	// Server options
+	serverOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			interceptors.RateLimitInterceptor(rateLimiter),
 			auth.AuthInterceptor(),
 		),
-	)
+	}
+	
+	// Enable mTLS if configured
+	mtlsCert := os.Getenv("MTLS_CERT_FILE")
+	mtlsKey := os.Getenv("MTLS_KEY_FILE")
+	mtlsCA := os.Getenv("MTLS_CA_FILE")
+	
+	if mtlsCert != "" && mtlsKey != "" && mtlsCA != "" {
+		mtlsCfg := mtls.Config{
+			CertFile: mtlsCert,
+			KeyFile:  mtlsKey,
+			CAFile:   mtlsCA,
+		}
+		
+		creds, err := mtls.LoadServerCredentials(mtlsCfg)
+		if err != nil {
+			log.Fatalf("Failed to load mTLS credentials: %v", err)
+		}
+		
+		serverOpts = append(serverOpts, grpc.Creds(creds))
+		log.Printf("mTLS enabled with cert=%s", mtlsCert)
+	} else {
+		log.Printf("WARN: mTLS not configured, running without TLS")
+	}
+	
+	s := grpc.NewServer(serverOpts...)
 	
 	server := &gatewayServer{}
 	
@@ -103,7 +130,27 @@ func main() {
 		runtimeURL = "localhost:9000"
 	}
 	
-	runtimeConn, err := grpc.Dial(runtimeURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Use mTLS for runtime connection if enabled
+	var dialOpts []grpc.DialOption
+	if mtlsCert != "" && mtlsKey != "" && mtlsCA != "" {
+		mtlsCfg := mtls.Config{
+			CertFile:   mtlsCert,
+			KeyFile:    mtlsKey,
+			CAFile:     mtlsCA,
+			ServerName: "runtime",
+		}
+		creds, err := mtls.LoadClientCredentials(mtlsCfg)
+		if err != nil {
+			log.Printf("WARN: Could not load mTLS client creds: %v", err)
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		} else {
+			dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+		}
+	} else {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+	
+	runtimeConn, err := grpc.Dial(runtimeURL, dialOpts...)
 	if err != nil {
 		log.Printf("WARN: Could not connect to runtime at %s: %v", runtimeURL, err)
 	} else {
@@ -116,6 +163,5 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
 }
 
