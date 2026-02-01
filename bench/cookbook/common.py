@@ -1,14 +1,17 @@
 import os
 import time
-import requests
 import json
 import numpy as np
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional
 
+# Use the real SDK client
+from sdk.python.client import FHEGBDTClient as SDKClient
+
 # Constants
-GATEWAY_URL = "http://localhost:8080"
-API_KEY = "test-tenant.cookbook"
+GATEWAY_ADDR = "localhost:8080"
+REGISTRY_ADDR = "localhost:8081"
+TENANT_ID = "test-tenant-cookbook"
 
 @dataclass
 class CookbookResult:
@@ -25,35 +28,21 @@ class CookbookResult:
     correctness_value: float
     server_counters: Dict[str, int]
 
-class FHEGBDTClient:
-    def __init__(self, url=GATEWAY_URL, api_key=API_KEY):
-        self.url = url
-        self.headers = {"x-api-key": api_key}
-        self.session = requests.Session()
-        self.session.headers.update(self.headers)
+class BenchmarkHarness:
+    def __init__(self, tenant_id=TENANT_ID):
+        self.client = SDKClient(GATEWAY_ADDR, tenant_id)
+        self.tenant_id = tenant_id
 
-    def register_model(self, name: str, library: str, content: str, spec: Dict) -> str:
-        payload = {
-            "name": name,
-            "library": library,
-            "content": content,
-            "feature_spec": spec
-        }
-        resp = self.session.post(f"{self.url}/v1/models", json=payload)
-        resp.raise_for_status()
-        return resp.json()["id"]
-
-    def compile_model(self, model_id: str, profile: str = "latency") -> str:
-        resp = self.session.post(f"{self.url}/v1/models/{model_id}/compile", params={"profile": profile})
-        resp.raise_for_status()
-        return resp.json()["compiled_model_id"]
-
-    def upload_keys(self, compiled_model_id: str, eval_keys: bytes):
-        # In a real SDK, this would upload binary keys. 
-        # For this cookbook harness, we mock the upload if we don't have the real SDK 
-        # or call the SDK if available.
-        # Assuming usage of real SDK in recipes, this helper might just be for verifying status.
-        pass
+    def run_inference_cycle(self, compiled_model_id: str, features: List[Dict[str, float]], iterations: int) -> List[float]:
+        latencies = []
+        # Warmup
+        self.client.predict_encrypted(compiled_model_id, features)
+        
+        for _ in range(iterations):
+            start = time.perf_counter()
+            self.client.predict_encrypted(compiled_model_id, features)
+            latencies.append((time.perf_counter() - start) * 1000)
+        return latencies
 
 def load_sklearn_dataset(name: str):
     from sklearn import datasets

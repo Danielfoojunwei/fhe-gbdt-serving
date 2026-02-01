@@ -20,8 +20,21 @@ add_executable(runtime
     main.cpp
     kernel/crypto_context.cpp
     kernel/step.cpp
+    kernel/step.cpp
     engine/executor.cpp
 )
+
+option(ENABLE_GPU "Enable GPU backend" OFF)
+
+if(ENABLE_GPU)
+    enable_language(CUDA)
+    target_sources(runtime PRIVATE 
+        kernel/gpu/gpu_backend.cu 
+        kernel/gpu/gpu_backend.cpp # if any
+    )
+    target_compile_definitions(runtime PRIVATE ENABLE_GPU)
+    # target_link_libraries(runtime PRIVATE CUDA::cudart)
+endif()
 
 # target_link_libraries(runtime 
 #     n2he::n2he
@@ -29,3 +42,7 @@ add_executable(runtime
 #     gRPC::grpc++
 #     protobuf::libprotobuf
 # )
+
+# Integration of Vendored N2HE
+add_subdirectory(third_party/n2he)
+target_link_libraries(runtime PRIVATE n2he)

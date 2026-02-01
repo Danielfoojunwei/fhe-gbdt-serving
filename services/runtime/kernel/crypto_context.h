@@ -1,15 +1,19 @@
-#pragma once
 #include <vector>
 #include <string>
 #include <memory>
+#include "backend.h"
 
 namespace fhe_gbdt::kernel {
 
 class Ciphertext {
 public:
-    std::vector<uint8_t> data;
+    // N2HE types
+    std::vector<int64_t> lwe_data;
+    std::vector<std::vector<int64_t>> rlwe_data;
+    
     std::string scheme_id;
     uint32_t batch_size;
+    bool is_rlwe = false;
 };
 
 class CryptoContext {
@@ -26,7 +30,7 @@ public:
 
 private:
     std::string scheme_id_;
-    // n2he::Context* n2he_ctx_;
+    std::unique_ptr<Backend> backend_;
 };
 
 } // namespace fhe_gbdt::kernel
