@@ -20,12 +20,30 @@ class MOAIOptimizer:
         
         # 2. Define Packing Layout (Hot features -> Lower slots)
         feature_map = {}
+        overflow_features = []
         for idx, fid in enumerate(sorted_features):
             if idx < self.batch_size:
                 feature_map[fid] = idx
             else:
-                # Handle overflow or multi-ciphertext packing in future
-                pass
+                # Track overflow features for multi-ciphertext packing
+                overflow_features.append(fid)
+
+        # Handle feature overflow with multi-ciphertext packing
+        if overflow_features:
+            import warnings
+            warnings.warn(
+                f"Model has {len(sorted_features)} features but batch_size={self.batch_size}. "
+                f"{len(overflow_features)} features will be packed into additional ciphertexts. "
+                f"Consider using GPU profile (batch_size=4096) for large feature sets.",
+                RuntimeWarning
+            )
+            # Map overflow features to additional ciphertext slots
+            # Format: (ciphertext_index, slot_within_ciphertext)
+            for i, fid in enumerate(overflow_features):
+                ct_index = 1 + (i // self.batch_size)
+                slot_index = i % self.batch_size
+                # Encode as: ct_index * batch_size + slot_index
+                feature_map[fid] = ct_index * self.batch_size + slot_index
 
         layout = PackingLayout(
             layout_type="frequency_sorted",

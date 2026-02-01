@@ -30,6 +30,7 @@ extern polynomial RLWE64_KeyGen(int n) {
   for (int i = 1; i <= n; ++i) {
     s[i] = x[i-1];
   }
+  delete[] x;  // Fix memory leak
   return s;
 }
 
@@ -89,6 +90,8 @@ extern vector<polynomial> RLWE64_Enc_2048(int n, int64_t q, int k, const polynom
   modq_poly(as, q);
   ct.push_back(as);
 
+  delete[] array_a;  // Fix memory leak
+  delete[] array_e;  // Fix memory leak
   return ct;
 }
 
@@ -144,6 +147,8 @@ extern vector<polynomial> RLWE64_Enc_512(int n, int64_t q, int k, const polynomi
   modq_poly(as, q);
   ct.push_back(as);
 
+  delete[] array_a;  // Fix memory leak
+  delete[] array_e;  // Fix memory leak
   return ct;
 }
 
