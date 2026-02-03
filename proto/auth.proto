@@ -1,0 +1,264 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/auth";
+
+import "google/protobuf/timestamp.proto";
+
+// AuthService handles authentication, SSO, and API key management
+service AuthService {
+  // User Authentication
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  // SAML SSO
+  rpc InitiateSAMLLogin(InitiateSAMLLoginRequest) returns (InitiateSAMLLoginResponse);
+  rpc HandleSAMLResponse(HandleSAMLResponseRequest) returns (HandleSAMLResponseResponse);
+  rpc ConfigureSAMLProvider(ConfigureSAMLProviderRequest) returns (ConfigureSAMLProviderResponse);
+  rpc GetSAMLMetadata(GetSAMLMetadataRequest) returns (GetSAMLMetadataResponse);
+
+  // OIDC SSO
+  rpc InitiateOIDCLogin(InitiateOIDCLoginRequest) returns (InitiateOIDCLoginResponse);
+  rpc HandleOIDCCallback(HandleOIDCCallbackRequest) returns (HandleOIDCCallbackResponse);
+  rpc ConfigureOIDCProvider(ConfigureOIDCProviderRequest) returns (ConfigureOIDCProviderResponse);
+
+  // API Key Management
+  rpc CreateAPIKey(CreateAPIKeyRequest) returns (CreateAPIKeyResponse);
+  rpc ListAPIKeys(ListAPIKeysRequest) returns (ListAPIKeysResponse);
+  rpc ValidateAPIKey(ValidateAPIKeyRequest) returns (ValidateAPIKeyResponse);
+  rpc RevokeAPIKey(RevokeAPIKeyRequest) returns (RevokeAPIKeyResponse);
+
+  // MFA
+  rpc EnableMFA(EnableMFARequest) returns (EnableMFAResponse);
+  rpc VerifyMFA(VerifyMFARequest) returns (VerifyMFAResponse);
+  rpc DisableMFA(DisableMFARequest) returns (DisableMFAResponse);
+}
+
+// User represents an authenticated user
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string tenant_id = 4;
+  string role = 5;
+  bool mfa_enabled = 6;
+  string auth_provider = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp last_login_at = 9;
+}
+
+// Authentication Messages
+message AuthenticateRequest {
+  string email = 1;
+  string password = 2;
+  string mfa_code = 3;
+  string ip_address = 4;
+  string user_agent = 5;
+}
+
+message AuthenticateResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 expires_in = 3;
+  string token_type = 4;
+  User user = 5;
+  bool requires_mfa = 6;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  int32 expires_in = 2;
+  string token_type = 3;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+  bool logout_all_devices = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+// SAML Messages
+message InitiateSAMLLoginRequest {
+  string provider_id = 1;
+  string relay_state = 2;
+}
+
+message InitiateSAMLLoginResponse {
+  string redirect_url = 1;
+  string request_id = 2;
+}
+
+message HandleSAMLResponseRequest {
+  string saml_response = 1;
+  string relay_state = 2;
+  string provider_id = 3;
+  map<string, string> attributes = 4;
+}
+
+message HandleSAMLResponseResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 expires_in = 3;
+  string token_type = 4;
+  User user = 5;
+}
+
+message ConfigureSAMLProviderRequest {
+  string tenant_id = 1;
+  string name = 2;
+  string entity_id = 3;
+  string sso_url = 4;
+  string certificate = 5;
+  map<string, string> attribute_map = 6;
+}
+
+message ConfigureSAMLProviderResponse {
+  string provider_id = 1;
+  string acs_url = 2;
+  string metadata_url = 3;
+}
+
+message GetSAMLMetadataRequest {
+  string provider_id = 1;
+}
+
+message GetSAMLMetadataResponse {
+  string metadata_xml = 1;
+}
+
+// OIDC Messages
+message InitiateOIDCLoginRequest {
+  string provider_id = 1;
+  string redirect_uri = 2;
+  repeated string scopes = 3;
+}
+
+message InitiateOIDCLoginResponse {
+  string authorization_url = 1;
+  string state = 2;
+}
+
+message HandleOIDCCallbackRequest {
+  string code = 1;
+  string state = 2;
+  string id_token = 3;
+}
+
+message HandleOIDCCallbackResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 expires_in = 3;
+  string token_type = 4;
+  User user = 5;
+}
+
+message ConfigureOIDCProviderRequest {
+  string tenant_id = 1;
+  string name = 2;
+  string issuer = 3;
+  string client_id = 4;
+  string client_secret = 5;
+  repeated string scopes = 6;
+}
+
+message ConfigureOIDCProviderResponse {
+  string provider_id = 1;
+  string redirect_uri = 2;
+}
+
+// API Key Messages
+message APIKey {
+  string id = 1;
+  string name = 2;
+  string key_prefix = 3;
+  repeated string scopes = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  google.protobuf.Timestamp last_used_at = 7;
+  bool revoked = 8;
+}
+
+message CreateAPIKeyRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  string name = 3;
+  repeated string scopes = 4;
+  int32 expires_in_days = 5;
+}
+
+message CreateAPIKeyResponse {
+  string key_id = 1;
+  string api_key = 2;  // Only returned once!
+  string name = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message ListAPIKeysRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  bool include_revoked = 3;
+}
+
+message ListAPIKeysResponse {
+  repeated APIKey keys = 1;
+}
+
+message ValidateAPIKeyRequest {
+  string api_key = 1;
+}
+
+message ValidateAPIKeyResponse {
+  bool valid = 1;
+  string key_id = 2;
+  string tenant_id = 3;
+  string user_id = 4;
+  repeated string scopes = 5;
+}
+
+message RevokeAPIKeyRequest {
+  string key_id = 1;
+  string tenant_id = 2;
+}
+
+message RevokeAPIKeyResponse {
+  bool success = 1;
+}
+
+// MFA Messages
+message EnableMFARequest {
+  string user_id = 1;
+  string method = 2;  // totp, sms, email
+}
+
+message EnableMFAResponse {
+  string secret = 1;
+  string qr_code_uri = 2;
+  repeated string backup_codes = 3;
+}
+
+message VerifyMFARequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message VerifyMFAResponse {
+  bool success = 1;
+}
+
+message DisableMFARequest {
+  string user_id = 1;
+  string password = 2;
+}
+
+message DisableMFAResponse {
+  bool success = 1;
+}

@@ -1,0 +1,286 @@
+# Status Page Configuration
+# Deploy with: helm install statuspage ./statuspage-chart
+
+# Site configuration
+site:
+  title: "FHE-GBDT Status"
+  description: "Real-time status for FHE-GBDT Serving platform"
+  url: "https://status.fhe-gbdt.dev"
+  logo: "/logo.svg"
+  favicon: "/favicon.ico"
+
+  # Timezone for incident reports
+  timezone: "UTC"
+
+  # Contact information
+  support_email: "support@fhe-gbdt.dev"
+  support_url: "https://docs.fhe-gbdt.dev/support"
+
+# Components to monitor
+components:
+  - id: api-gateway
+    name: "API Gateway"
+    description: "Main API endpoint for all requests"
+    group: "Core Services"
+    health_check:
+      url: "http://gateway:8080/health"
+      interval: 30s
+      timeout: 5s
+
+  - id: inference-runtime
+    name: "Inference Runtime"
+    description: "FHE computation engine"
+    group: "Core Services"
+    health_check:
+      url: "http://runtime:8082/health"
+      interval: 30s
+      timeout: 10s
+
+  - id: model-registry
+    name: "Model Registry"
+    description: "Model storage and management"
+    group: "Core Services"
+    health_check:
+      url: "http://registry:8081/health"
+      interval: 30s
+      timeout: 5s
+
+  - id: keystore
+    name: "Key Store"
+    description: "Evaluation key management"
+    group: "Core Services"
+    health_check:
+      url: "http://keystore:8083/health"
+      interval: 30s
+      timeout: 5s
+
+  - id: billing-service
+    name: "Billing Service"
+    description: "Subscription and payment processing"
+    group: "Platform Services"
+    health_check:
+      url: "http://billing:8084/health"
+      interval: 60s
+      timeout: 5s
+
+  - id: customer-portal
+    name: "Customer Portal"
+    description: "Web dashboard and management console"
+    group: "Platform Services"
+    health_check:
+      url: "http://portal:3000/api/health"
+      interval: 30s
+      timeout: 5s
+
+  - id: database
+    name: "Database"
+    description: "PostgreSQL database cluster"
+    group: "Infrastructure"
+    health_check:
+      type: "tcp"
+      host: "postgres"
+      port: 5432
+      interval: 30s
+      timeout: 5s
+
+# Component groups
+groups:
+  - id: core-services
+    name: "Core Services"
+    description: "Essential services for encrypted inference"
+    order: 1
+
+  - id: platform-services
+    name: "Platform Services"
+    description: "Management and billing services"
+    order: 2
+
+  - id: infrastructure
+    name: "Infrastructure"
+    description: "Underlying infrastructure components"
+    order: 3
+
+# Status definitions
+statuses:
+  operational:
+    name: "Operational"
+    description: "All systems functioning normally"
+    color: "#22c55e"
+
+  degraded:
+    name: "Degraded Performance"
+    description: "System is functional but experiencing issues"
+    color: "#f59e0b"
+
+  partial_outage:
+    name: "Partial Outage"
+    description: "Some functionality is unavailable"
+    color: "#ef4444"
+
+  major_outage:
+    name: "Major Outage"
+    description: "Service is completely unavailable"
+    color: "#dc2626"
+
+  maintenance:
+    name: "Under Maintenance"
+    description: "Scheduled maintenance in progress"
+    color: "#3b82f6"
+
+# Incident management
+incidents:
+  # Auto-create incidents when health checks fail
+  auto_create: true
+  auto_resolve: true
+
+  # Templates for auto-generated incidents
+  templates:
+    degraded: |
+      ## Impact
+      {{.ComponentName}} is experiencing degraded performance.
+
+      ## What we know
+      - Health check response time exceeded threshold
+      - Service is still responding but slower than normal
+
+      ## Next update
+      We are investigating and will provide an update within 30 minutes.
+
+    outage: |
+      ## Impact
+      {{.ComponentName}} is currently unavailable.
+
+      ## What we know
+      - Health checks are failing
+      - We are investigating the root cause
+
+      ## Next update
+      We will provide an update within 15 minutes.
+
+# Maintenance windows
+maintenance:
+  # Recurring maintenance windows
+  scheduled:
+    - name: "Weekly maintenance"
+      description: "Routine maintenance and updates"
+      cron: "0 4 * * 0"  # Sundays at 4 AM UTC
+      duration: "2h"
+      components: ["database"]
+
+# Notifications
+notifications:
+  # Email notifications
+  email:
+    enabled: true
+    smtp:
+      host: "${SMTP_HOST}"
+      port: 587
+      username: "${SMTP_USERNAME}"
+      password: "${SMTP_PASSWORD}"
+      from: "status@fhe-gbdt.dev"
+
+  # Slack webhook
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#incidents"
+
+  # PagerDuty integration
+  pagerduty:
+    enabled: true
+    routing_key: "${PAGERDUTY_ROUTING_KEY}"
+
+# Subscribers
+subscribers:
+  # Allow public subscription
+  public_subscribe: true
+
+  # Subscription options
+  options:
+    - email
+    - webhook
+    - rss
+
+  # Webhook format
+  webhook:
+    format: "json"
+    headers:
+      Content-Type: "application/json"
+
+# Metrics collection
+metrics:
+  # Historical uptime calculation
+  uptime_calculation:
+    window: "90d"
+    exclude_maintenance: true
+
+  # Response time tracking
+  response_time:
+    percentiles: [50, 95, 99]
+    retention: "30d"
+
+# API configuration
+api:
+  enabled: true
+  base_url: "/api/v1"
+
+  # Rate limiting
+  rate_limit:
+    requests_per_minute: 60
+
+  # Endpoints
+  endpoints:
+    status: true
+    components: true
+    incidents: true
+    subscribers: true
+    metrics: true
+
+# UI configuration
+ui:
+  # Theme
+  theme:
+    primary_color: "#4f46e5"
+    background_color: "#f9fafb"
+
+  # Show uptime graph
+  show_uptime_graph: true
+  uptime_graph_days: 90
+
+  # Show response time graph
+  show_response_time: true
+
+  # Custom CSS
+  custom_css: |
+    .status-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
+
+# Security
+security:
+  # Admin authentication
+  admin:
+    oauth:
+      provider: "github"
+      allowed_orgs: ["fhe-gbdt"]
+
+  # API authentication
+  api_key:
+    header: "X-Status-API-Key"
+
+# Integrations
+integrations:
+  # Prometheus for metrics
+  prometheus:
+    enabled: true
+    endpoint: "http://prometheus:9090"
+
+  # Grafana for dashboards
+  grafana:
+    enabled: true
+    url: "https://grafana.fhe-gbdt.dev"
+
+  # AlertManager for alerts
+  alertmanager:
+    enabled: true
+    endpoint: "http://alertmanager:9093"

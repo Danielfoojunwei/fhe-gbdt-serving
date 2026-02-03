@@ -1,0 +1,581 @@
+openapi: 3.1.0
+info:
+  title: FHE-GBDT Serving API
+  description: |
+    Privacy-preserving machine learning inference API using Fully Homomorphic Encryption
+    for Gradient Boosted Decision Tree models.
+
+    ## Authentication
+
+    All API requests require authentication via API key. Include your API key in the
+    `X-API-Key` header or as a Bearer token in the `Authorization` header.
+
+    ```
+    X-API-Key: your-api-key
+    ```
+    or
+    ```
+    Authorization: Bearer your-api-key
+    ```
+
+    ## Rate Limiting
+
+    - Free tier: 100 requests/minute
+    - Pro tier: 1000 requests/minute
+    - Enterprise: Custom limits
+
+    Rate limit headers are included in all responses:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests in current window
+    - `X-RateLimit-Reset`: Unix timestamp when the window resets
+
+    ## Errors
+
+    The API uses conventional HTTP response codes:
+    - `2xx`: Success
+    - `4xx`: Client error (invalid request, authentication, etc.)
+    - `5xx`: Server error
+
+    Error responses include a JSON body with `code` and `message` fields.
+
+  version: 1.0.0
+  contact:
+    name: FHE-GBDT Support
+    email: support@fhe-gbdt.dev
+    url: https://docs.fhe-gbdt.dev
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://api.fhe-gbdt.dev/api/v1
+    description: Production
+  - url: https://api.staging.fhe-gbdt.dev/api/v1
+    description: Staging
+  - url: http://localhost:8090/api/v1
+    description: Local development
+
+tags:
+  - name: Models
+    description: Model registration and management
+  - name: Predictions
+    description: Encrypted inference operations
+  - name: Keys
+    description: FHE key management
+  - name: Billing
+    description: Subscription and billing operations
+  - name: Metering
+    description: Usage tracking and quotas
+
+paths:
+  /models:
+    get:
+      tags: [Models]
+      summary: List registered models
+      description: Returns a paginated list of models registered by the authenticated tenant.
+      operationId: listModels
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of models to return
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of models to skip
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: string
+            enum: [registered, compiling, ready, failed]
+        - name: library_type
+          in: query
+          description: Filter by GBDT library
+          schema:
+            type: string
+            enum: [xgboost, lightgbm, catboost]
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Model'
+                  total:
+                    type: integer
+                  has_more:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+    post:
+      tags: [Models]
+      summary: Register a new model
+      description: |
+        Upload and register a new GBDT model for encrypted inference.
+
+        Supported formats:
+        - XGBoost: JSON (`save_model("model.json")`)
+        - LightGBM: JSON (`model.dump_model()`)
+        - CatBoost: JSON with oblivious trees
+      operationId: registerModel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, library_type, content]
+              properties:
+                name:
+                  type: string
+                  description: Human-readable model name
+                  example: fraud-detector-v2
+                library_type:
+                  type: string
+                  enum: [xgboost, lightgbm, catboost]
+                  description: GBDT library that produced this model
+                content:
+                  type: string
+                  format: byte
+                  description: Base64-encoded model content
+                description:
+                  type: string
+                  description: Optional model description
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags for organizing models
+      responses:
+        '201':
+          description: Model registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Model too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /models/{modelId}:
+    get:
+      tags: [Models]
+      summary: Get model details
+      operationId: getModel
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '200':
+          description: Model details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Models]
+      summary: Delete a model
+      operationId: deleteModel
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '204':
+          description: Model deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /models/{modelId}/compile:
+    post:
+      tags: [Models]
+      summary: Compile model for FHE inference
+      description: |
+        Start compilation of a registered model for encrypted inference.
+        Compilation optimizes the model for FHE operations using MOAI techniques.
+      operationId: compileModel
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: string
+                  enum: [fast, balanced, accurate]
+                  default: balanced
+                  description: |
+                    Optimization profile:
+                    - `fast`: Lower precision, ~50ms latency
+                    - `balanced`: Good balance, ~60ms latency
+                    - `accurate`: Higher precision, ~80ms latency
+      responses:
+        '202':
+          description: Compilation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompiledModel'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /predict:
+    post:
+      tags: [Predictions]
+      summary: Make encrypted prediction
+      description: |
+        Run inference on encrypted data. The server performs computation on
+        ciphertexts without ever seeing the plaintext data.
+
+        **Workflow:**
+        1. Encrypt features client-side using your secret key
+        2. Send encrypted payload to this endpoint
+        3. Receive encrypted result
+        4. Decrypt client-side using your secret key
+      operationId: predict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [compiled_model_id, payload]
+              properties:
+                compiled_model_id:
+                  type: string
+                  description: ID of the compiled model to use
+                payload:
+                  type: string
+                  format: byte
+                  description: Base64-encoded encrypted ciphertext
+                priority:
+                  type: integer
+                  default: 0
+                  description: Request priority (higher = more priority)
+      responses:
+        '200':
+          description: Prediction result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      payload:
+                        type: string
+                        format: byte
+                        description: Base64-encoded encrypted result
+                  latency_ms:
+                    type: number
+                    description: Server-side latency in milliseconds
+                  request_id:
+                    type: string
+                    description: Unique request identifier for debugging
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /keys:
+    get:
+      tags: [Keys]
+      summary: Get key status
+      description: Check the status of uploaded evaluation keys
+      operationId: getKeyStatus
+      responses:
+        '200':
+          description: Key status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [active, expired, none]
+                  key_id:
+                    type: string
+                  uploaded_at:
+                    type: string
+                    format: date-time
+                  expires_at:
+                    type: string
+                    format: date-time
+
+  /keys/eval:
+    post:
+      tags: [Keys]
+      summary: Upload evaluation keys
+      description: |
+        Upload evaluation keys to enable encrypted computation.
+        These keys allow the server to perform FHE operations without
+        access to your secret key.
+      operationId: uploadEvalKeys
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+          application/json:
+            schema:
+              type: object
+              required: [eval_keys]
+              properties:
+                eval_keys:
+                  type: string
+                  format: byte
+                  description: Base64-encoded evaluation keys
+      responses:
+        '201':
+          description: Keys uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key_id:
+                    type: string
+                  status:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+
+  /billing/plans:
+    get:
+      tags: [Billing]
+      summary: List available plans
+      operationId: listPlans
+      responses:
+        '200':
+          description: Available plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plan'
+
+  /billing/subscription:
+    get:
+      tags: [Billing]
+      summary: Get current subscription
+      operationId: getSubscription
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '404':
+          description: No subscription found
+
+  /billing/usage:
+    get:
+      tags: [Billing]
+      summary: Get current usage
+      operationId: getUsage
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usage'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      description: Unique model identifier
+      schema:
+        type: string
+
+  schemas:
+    Model:
+      type: object
+      properties:
+        model_id:
+          type: string
+          description: Unique identifier
+        name:
+          type: string
+          description: Model name
+        library_type:
+          type: string
+          enum: [xgboost, lightgbm, catboost]
+        status:
+          type: string
+          enum: [registered, compiling, ready, failed]
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CompiledModel:
+      type: object
+      properties:
+        compiled_model_id:
+          type: string
+        model_id:
+          type: string
+        profile:
+          type: string
+        status:
+          type: string
+          enum: [compiling, ready, failed]
+        plan_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price_cents:
+          type: integer
+        prediction_limit:
+          type: integer
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+
+    Subscription:
+      type: object
+      properties:
+        subscription_id:
+          type: string
+        plan_id:
+          type: string
+        status:
+          type: string
+          enum: [active, past_due, canceled, trialing]
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+
+    Usage:
+      type: object
+      properties:
+        predictions_count:
+          type: integer
+        predictions_limit:
+          type: integer
+        usage_percentage:
+          type: number
+        period_start:
+          type: string
+          format: date-time
+        period_end:
+          type: string
+          format: date-time
+        overage_count:
+          type: integer
+        overage_cost_cents:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
