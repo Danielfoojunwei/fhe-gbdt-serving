@@ -1,0 +1,181 @@
+// Batch Inference Service Protocol Buffer Definitions
+// Large-scale batch predictions with FHE
+
+syntax = "proto3";
+
+package fhe_gbdt.batch;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/batch";
+
+import "google/protobuf/timestamp.proto";
+
+service BatchService {
+  // Job management
+  rpc CreateBatchJob(CreateBatchJobRequest) returns (CreateBatchJobResponse);
+  rpc GetBatchJob(GetBatchJobRequest) returns (GetBatchJobResponse);
+  rpc ListBatchJobs(ListBatchJobsRequest) returns (ListBatchJobsResponse);
+  rpc CancelBatchJob(CancelBatchJobRequest) returns (CancelBatchJobResponse);
+
+  // Results
+  rpc GetBatchResults(GetBatchResultsRequest) returns (GetBatchResultsResponse);
+  rpc DownloadResults(DownloadResultsRequest) returns (stream DownloadResultsResponse);
+
+  // Streaming input
+  rpc StreamBatchInput(stream StreamBatchInputRequest) returns (StreamBatchInputResponse);
+}
+
+// ============================================================================
+// Job Management
+// ============================================================================
+
+message BatchConfig {
+  int32 batch_size = 1;  // Records per batch
+  int32 concurrency = 2;  // Parallel workers
+  int32 timeout_seconds = 3;  // Per-record timeout
+  bool continue_on_error = 4;  // Continue processing on errors
+  string priority = 5;  // low, normal, high
+  map<string, string> metadata = 6;
+}
+
+message CreateBatchJobRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  string version_id = 3;
+  string input_url = 4;  // S3/GCS/HTTP URL for input data
+  bytes input_data = 5;  // Or inline input data
+  string input_format = 6;  // csv, json, parquet
+  string output_url = 7;  // S3/GCS URL for output
+  string output_format = 8;  // csv, json, parquet
+  BatchConfig config = 9;
+}
+
+message CreateBatchJobResponse {
+  string job_id = 1;
+  string status = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message GetBatchJobRequest {
+  string job_id = 1;
+}
+
+message BatchJob {
+  string id = 1;
+  string tenant_id = 2;
+  string model_id = 3;
+  string version_id = 4;
+  string input_url = 5;
+  string output_url = 6;
+  string input_format = 7;
+  string output_format = 8;
+  string status = 9;  // pending, running, completed, failed, cancelled, completed_with_errors
+  float progress = 10;  // 0-100
+  int64 total_records = 11;
+  int64 processed_records = 12;
+  int64 failed_records = 13;
+  string error_message = 14;
+  BatchConfig config = 15;
+  google.protobuf.Timestamp created_at = 16;
+  google.protobuf.Timestamp started_at = 17;
+  google.protobuf.Timestamp completed_at = 18;
+}
+
+message GetBatchJobResponse {
+  BatchJob job = 1;
+}
+
+message ListBatchJobsRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  string status = 3;
+  int32 limit = 4;
+  string page_token = 5;
+}
+
+message BatchJobSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string model_id = 3;
+  string version_id = 4;
+  string status = 5;
+  float progress = 6;
+  int64 total_records = 7;
+  int64 processed_records = 8;
+  int64 failed_records = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp completed_at = 11;
+}
+
+message ListBatchJobsResponse {
+  repeated BatchJobSummary jobs = 1;
+  string next_page_token = 2;
+}
+
+message CancelBatchJobRequest {
+  string job_id = 1;
+}
+
+message CancelBatchJobResponse {
+  bool success = 1;
+}
+
+// ============================================================================
+// Results
+// ============================================================================
+
+message GetBatchResultsRequest {
+  string job_id = 1;
+  int32 limit = 2;
+  int64 offset = 3;
+}
+
+message BatchResult {
+  int64 record_index = 1;
+  bytes encrypted_output = 2;
+  string error = 3;
+}
+
+message GetBatchResultsResponse {
+  repeated BatchResult results = 1;
+  string output_url = 2;
+}
+
+message DownloadResultsRequest {
+  string job_id = 1;
+  string format = 2;  // csv, json, parquet
+}
+
+message DownloadResultsResponse {
+  bytes chunk = 1;
+}
+
+// ============================================================================
+// Streaming Input
+// ============================================================================
+
+message StreamBatchInputRequest {
+  oneof data {
+    StreamBatchInputHeader header = 1;
+    StreamBatchInputChunk chunk = 2;
+  }
+}
+
+message StreamBatchInputHeader {
+  string tenant_id = 1;
+  string model_id = 2;
+  string version_id = 3;
+  string input_format = 4;
+  string output_url = 5;
+  BatchConfig config = 6;
+}
+
+message StreamBatchInputChunk {
+  bytes data = 1;
+  bool is_last = 2;
+}
+
+message StreamBatchInputResponse {
+  string job_id = 1;
+  string status = 2;
+  int64 records_received = 3;
+}

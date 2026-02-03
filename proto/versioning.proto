@@ -1,0 +1,222 @@
+// Model Versioning and Deployment Protocol Buffer Definitions
+// Handles model versions, canary deployments, and rollbacks
+
+syntax = "proto3";
+
+package fhe_gbdt.versioning;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/versioning";
+
+import "google/protobuf/timestamp.proto";
+
+service VersioningService {
+  // Version management
+  rpc CreateVersion(CreateVersionRequest) returns (CreateVersionResponse);
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  rpc DeleteVersion(DeleteVersionRequest) returns (DeleteVersionResponse);
+
+  // Deployment management
+  rpc DeployVersion(DeployVersionRequest) returns (DeployVersionResponse);
+  rpc GetActiveVersions(GetActiveVersionsRequest) returns (GetActiveVersionsResponse);
+  rpc SetTrafficSplit(SetTrafficSplitRequest) returns (SetTrafficSplitResponse);
+  rpc Rollback(RollbackRequest) returns (RollbackResponse);
+
+  // Deployment history
+  rpc GetDeploymentHistory(GetDeploymentHistoryRequest) returns (GetDeploymentHistoryResponse);
+  rpc GetRollbackHistory(GetRollbackHistoryRequest) returns (GetRollbackHistoryResponse);
+
+  // Promotion between environments
+  rpc PromoteVersion(PromoteVersionRequest) returns (PromoteVersionResponse);
+}
+
+// ============================================================================
+// Version Management
+// ============================================================================
+
+message CreateVersionRequest {
+  string model_id = 1;
+  string version = 2;
+  string compiled_model_id = 3;
+  string description = 4;
+  string created_by = 5;
+  map<string, string> labels = 6;
+}
+
+message ModelVersion {
+  string id = 1;
+  string model_id = 2;
+  string version = 3;
+  string compiled_model_id = 4;
+  string status = 5; // draft, staged, deployed, retired
+  int32 traffic_percent = 6;
+  string description = 7;
+  string created_by = 8;
+  map<string, string> labels = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp deployed_at = 11;
+  google.protobuf.Timestamp retired_at = 12;
+}
+
+message CreateVersionResponse {
+  ModelVersion version = 1;
+}
+
+message GetVersionRequest {
+  string version_id = 1;
+}
+
+message GetVersionResponse {
+  ModelVersion version = 1;
+}
+
+message ListVersionsRequest {
+  string model_id = 1;
+  string status = 2; // filter by status
+  int32 limit = 3;
+  string page_token = 4;
+}
+
+message ListVersionsResponse {
+  repeated ModelVersion versions = 1;
+  string next_page_token = 2;
+}
+
+message DeleteVersionRequest {
+  string version_id = 1;
+  bool force = 2; // force delete even if deployed
+}
+
+message DeleteVersionResponse {
+  bool success = 1;
+}
+
+// ============================================================================
+// Deployment Management
+// ============================================================================
+
+message DeployVersionRequest {
+  string version_id = 1;
+  int32 traffic_percent = 2;
+  string deployed_by = 3;
+  DeploymentStrategy strategy = 4;
+}
+
+enum DeploymentStrategy {
+  DEPLOYMENT_STRATEGY_UNSPECIFIED = 0;
+  DEPLOYMENT_STRATEGY_IMMEDIATE = 1;
+  DEPLOYMENT_STRATEGY_CANARY = 2;
+  DEPLOYMENT_STRATEGY_BLUE_GREEN = 3;
+  DEPLOYMENT_STRATEGY_ROLLING = 4;
+}
+
+message DeployVersionResponse {
+  bool success = 1;
+  string deployment_id = 2;
+}
+
+message GetActiveVersionsRequest {
+  string model_id = 1;
+}
+
+message ActiveVersion {
+  string version_id = 1;
+  string version = 2;
+  string compiled_model_id = 3;
+  int32 traffic_percent = 4;
+}
+
+message GetActiveVersionsResponse {
+  repeated ActiveVersion versions = 1;
+}
+
+message TrafficSplit {
+  string version_id = 1;
+  int32 traffic_percent = 2;
+}
+
+message SetTrafficSplitRequest {
+  string model_id = 1;
+  repeated TrafficSplit splits = 2;
+  string modified_by = 3;
+}
+
+message SetTrafficSplitResponse {
+  bool success = 1;
+}
+
+message RollbackRequest {
+  string model_id = 1;
+  string target_version_id = 2;
+  string reason = 3;
+  string rolled_back_by = 4;
+}
+
+message RollbackResponse {
+  bool success = 1;
+  string rollback_id = 2;
+  string deployment_id = 3;
+  string restored_version = 4;
+}
+
+// ============================================================================
+// Deployment History
+// ============================================================================
+
+message GetDeploymentHistoryRequest {
+  string model_id = 1;
+  int32 limit = 2;
+  string page_token = 3;
+}
+
+message Deployment {
+  string id = 1;
+  string model_id = 2;
+  string version_id = 3;
+  string version = 4;
+  int32 traffic_percent = 5;
+  string deployed_by = 6;
+  DeploymentStrategy strategy = 7;
+  google.protobuf.Timestamp deployed_at = 8;
+}
+
+message GetDeploymentHistoryResponse {
+  repeated Deployment deployments = 1;
+  string next_page_token = 2;
+}
+
+message GetRollbackHistoryRequest {
+  string model_id = 1;
+  int32 limit = 2;
+}
+
+message RollbackRecord {
+  string id = 1;
+  string model_id = 2;
+  string from_version_id = 3;
+  string to_version_id = 4;
+  string reason = 5;
+  string rolled_back_by = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message GetRollbackHistoryResponse {
+  repeated RollbackRecord rollbacks = 1;
+}
+
+// ============================================================================
+// Environment Promotion
+// ============================================================================
+
+message PromoteVersionRequest {
+  string version_id = 1;
+  string source_environment = 2; // staging, production
+  string target_environment = 3;
+  string promoted_by = 4;
+}
+
+message PromoteVersionResponse {
+  bool success = 1;
+  string new_version_id = 2;
+  string target_environment = 3;
+}

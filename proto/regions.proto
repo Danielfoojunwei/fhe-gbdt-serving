@@ -1,0 +1,214 @@
+// Multi-Region and Data Residency Protocol Buffer Definitions
+// Region management, data residency policies, and geo-routing
+
+syntax = "proto3";
+
+package fhe_gbdt.regions;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/regions";
+
+import "google/protobuf/timestamp.proto";
+
+service RegionsService {
+  // Region management
+  rpc ListRegions(ListRegionsRequest) returns (ListRegionsResponse);
+  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse);
+
+  // Tenant region configuration
+  rpc SetTenantRegions(SetTenantRegionsRequest) returns (SetTenantRegionsResponse);
+  rpc GetTenantRegions(GetTenantRegionsRequest) returns (GetTenantRegionsResponse);
+
+  // Data residency
+  rpc SetDataResidency(SetDataResidencyRequest) returns (SetDataResidencyResponse);
+  rpc GetDataResidency(GetDataResidencyRequest) returns (GetDataResidencyResponse);
+  rpc CheckDataResidency(CheckDataResidencyRequest) returns (CheckDataResidencyResponse);
+
+  // Geo-routing
+  rpc GetOptimalRegion(GetOptimalRegionRequest) returns (GetOptimalRegionResponse);
+
+  // Replication
+  rpc SetupReplication(SetupReplicationRequest) returns (SetupReplicationResponse);
+  rpc GetReplicationStatus(GetReplicationStatusRequest) returns (GetReplicationStatusResponse);
+  rpc ListReplications(ListReplicationsRequest) returns (ListReplicationsResponse);
+}
+
+// ============================================================================
+// Region Management
+// ============================================================================
+
+message Region {
+  string id = 1;
+  string code = 2;  // us-east-1, eu-west-1, ap-southeast-1
+  string name = 3;
+  string provider = 4;  // aws, gcp, azure
+  string country = 5;
+  string continent = 6;
+  double latitude = 7;
+  double longitude = 8;
+  string status = 9;  // active, maintenance, disabled
+  string tier = 10;  // primary, secondary, edge
+  map<string, string> endpoints = 11;
+  repeated string features = 12;
+  repeated string compliance = 13;  // SOC2, HIPAA, GDPR, etc.
+  int32 max_capacity = 14;
+  int32 current_load = 15;
+  google.protobuf.Timestamp created_at = 16;
+}
+
+message ListRegionsRequest {
+  string provider = 1;
+  string continent = 2;
+  string status = 3;
+}
+
+message ListRegionsResponse {
+  repeated Region regions = 1;
+}
+
+message GetRegionRequest {
+  string region_code = 1;
+}
+
+message GetRegionResponse {
+  Region region = 1;
+}
+
+// ============================================================================
+// Tenant Region Configuration
+// ============================================================================
+
+message SetTenantRegionsRequest {
+  string tenant_id = 1;
+  repeated string region_codes = 2;
+  string primary_region = 3;
+}
+
+message SetTenantRegionsResponse {
+  bool success = 1;
+}
+
+message GetTenantRegionsRequest {
+  string tenant_id = 1;
+}
+
+message TenantRegion {
+  string region_code = 1;
+  string name = 2;
+  string provider = 3;
+  string country = 4;
+  repeated string compliance = 5;
+}
+
+message GetTenantRegionsResponse {
+  repeated TenantRegion regions = 1;
+  string primary_region = 2;
+}
+
+// ============================================================================
+// Data Residency
+// ============================================================================
+
+message SetDataResidencyRequest {
+  string tenant_id = 1;
+  repeated string allowed_countries = 2;
+  repeated string blocked_countries = 3;
+  repeated string compliance_requirements = 4;  // GDPR, HIPAA, etc.
+}
+
+message SetDataResidencyResponse {
+  bool success = 1;
+}
+
+message GetDataResidencyRequest {
+  string tenant_id = 1;
+}
+
+message DataResidencyPolicy {
+  string tenant_id = 1;
+  repeated string allowed_countries = 2;
+  repeated string blocked_countries = 3;
+  repeated string compliance_requirements = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message GetDataResidencyResponse {
+  DataResidencyPolicy policy = 1;
+}
+
+message CheckDataResidencyRequest {
+  string tenant_id = 1;
+  string country = 2;
+  string region_code = 3;
+}
+
+message CheckDataResidencyResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+// ============================================================================
+// Geo-Routing
+// ============================================================================
+
+message GetOptimalRegionRequest {
+  string tenant_id = 1;
+  double client_latitude = 2;
+  double client_longitude = 3;
+  string client_country = 4;
+}
+
+message GetOptimalRegionResponse {
+  string region_code = 1;
+  string reason = 2;
+}
+
+// ============================================================================
+// Replication
+// ============================================================================
+
+message SetupReplicationRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  string source_region = 3;
+  repeated string target_regions = 4;
+  string replication_mode = 5;  // sync, async
+}
+
+message SetupReplicationResponse {
+  string replication_id = 1;
+  string status = 2;
+}
+
+message GetReplicationStatusRequest {
+  string replication_id = 1;
+}
+
+message GetReplicationStatusResponse {
+  string replication_id = 1;
+  string status = 2;  // pending, in_progress, completed, failed
+  string source_region = 3;
+  repeated string target_regions = 4;
+  float progress = 5;  // 0-100
+  google.protobuf.Timestamp last_sync_at = 6;
+  string error_message = 7;
+}
+
+message ListReplicationsRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+}
+
+message Replication {
+  string id = 1;
+  string model_id = 2;
+  string source_region = 3;
+  repeated string target_regions = 4;
+  string replication_mode = 5;
+  string status = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp last_sync_at = 8;
+}
+
+message ListReplicationsResponse {
+  repeated Replication replications = 1;
+}

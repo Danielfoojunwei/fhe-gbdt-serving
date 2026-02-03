@@ -1,0 +1,216 @@
+// Webhooks Service Protocol Buffer Definitions
+// Event-driven notifications for system events
+
+syntax = "proto3";
+
+package fhe_gbdt.webhooks;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/webhooks";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+service WebhooksService {
+  // Webhook management
+  rpc CreateWebhook(CreateWebhookRequest) returns (CreateWebhookResponse);
+  rpc GetWebhook(GetWebhookRequest) returns (GetWebhookResponse);
+  rpc UpdateWebhook(UpdateWebhookRequest) returns (UpdateWebhookResponse);
+  rpc DeleteWebhook(DeleteWebhookRequest) returns (DeleteWebhookResponse);
+  rpc ListWebhooks(ListWebhooksRequest) returns (ListWebhooksResponse);
+
+  // Webhook security
+  rpc RotateSecret(RotateSecretRequest) returns (RotateSecretResponse);
+  rpc TestWebhook(TestWebhookRequest) returns (TestWebhookResponse);
+
+  // Event publishing
+  rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
+  rpc GetEventDeliveries(GetEventDeliveriesRequest) returns (GetEventDeliveriesResponse);
+  rpc RetryDelivery(RetryDeliveryRequest) returns (RetryDeliveryResponse);
+
+  // Event types
+  rpc ListEventTypes(ListEventTypesRequest) returns (ListEventTypesResponse);
+}
+
+// ============================================================================
+// Webhook Management
+// ============================================================================
+
+message CreateWebhookRequest {
+  string tenant_id = 1;
+  string name = 2;
+  string url = 3;
+  repeated string events = 4;  // Event types to subscribe to
+  map<string, string> headers = 5;  // Custom headers to send
+}
+
+message Webhook {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string url = 4;
+  string secret = 5;  // Signing secret
+  repeated string events = 6;
+  map<string, string> headers = 7;
+  bool enabled = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp last_triggered_at = 10;
+}
+
+message CreateWebhookResponse {
+  Webhook webhook = 1;
+}
+
+message GetWebhookRequest {
+  string webhook_id = 1;
+}
+
+message GetWebhookResponse {
+  Webhook webhook = 1;
+}
+
+message UpdateWebhookRequest {
+  string webhook_id = 1;
+  string name = 2;
+  string url = 3;
+  repeated string events = 4;
+  map<string, string> headers = 5;
+  bool enabled = 6;
+}
+
+message UpdateWebhookResponse {
+  Webhook webhook = 1;
+}
+
+message DeleteWebhookRequest {
+  string webhook_id = 1;
+}
+
+message DeleteWebhookResponse {
+  bool success = 1;
+}
+
+message ListWebhooksRequest {
+  string tenant_id = 1;
+}
+
+message WebhookSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string url = 4;
+  repeated string events = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp last_triggered_at = 8;
+}
+
+message ListWebhooksResponse {
+  repeated WebhookSummary webhooks = 1;
+}
+
+// ============================================================================
+// Webhook Security
+// ============================================================================
+
+message RotateSecretRequest {
+  string webhook_id = 1;
+}
+
+message RotateSecretResponse {
+  string new_secret = 1;
+}
+
+message TestWebhookRequest {
+  string webhook_id = 1;
+}
+
+message TestWebhookResponse {
+  bool success = 1;
+  int32 status_code = 2;
+  string response_body = 3;
+  string error_message = 4;
+}
+
+// ============================================================================
+// Event Publishing
+// ============================================================================
+
+message PublishEventRequest {
+  string tenant_id = 1;
+  string event_type = 2;
+  map<string, google.protobuf.Value> payload = 3;
+}
+
+message PublishEventResponse {
+  string event_id = 1;
+  google.protobuf.Timestamp published_at = 2;
+}
+
+message GetEventDeliveriesRequest {
+  string tenant_id = 1;
+  string event_id = 2;  // Optional: filter by event
+  string webhook_id = 3;  // Optional: filter by webhook
+}
+
+message EventDelivery {
+  string id = 1;
+  string webhook_id = 2;
+  string event_id = 3;
+  string status = 4;  // success, failed, pending
+  int32 status_code = 5;
+  string response_body = 6;
+  string error_message = 7;
+  int32 attempt = 8;
+  google.protobuf.Timestamp delivered_at = 9;
+}
+
+message GetEventDeliveriesResponse {
+  repeated EventDelivery deliveries = 1;
+}
+
+message RetryDeliveryRequest {
+  string delivery_id = 1;
+}
+
+message RetryDeliveryResponse {
+  bool queued = 1;
+}
+
+// ============================================================================
+// Event Types
+// ============================================================================
+
+message ListEventTypesRequest {}
+
+message EventType {
+  string name = 1;
+  string description = 2;
+  string category = 3;
+  string example_payload = 4;
+}
+
+message ListEventTypesResponse {
+  repeated EventType event_types = 1;
+}
+
+// Supported event types:
+// - model.registered: New model registered
+// - model.compiled: Model compilation completed
+// - model.deployed: Model version deployed
+// - model.retired: Model version retired
+// - model.deleted: Model deleted
+// - prediction.completed: Batch prediction completed
+// - prediction.failed: Batch prediction failed
+// - key.generated: New encryption keys generated
+// - key.rotated: Encryption keys rotated
+// - key.revoked: Encryption keys revoked
+// - billing.subscription.created: New subscription created
+// - billing.subscription.updated: Subscription updated
+// - billing.subscription.cancelled: Subscription cancelled
+// - billing.invoice.created: Invoice created
+// - billing.invoice.paid: Invoice paid
+// - billing.payment.failed: Payment failed
+// - alert.triggered: Monitoring alert triggered
+// - alert.resolved: Monitoring alert resolved
+// - drift.detected: Model drift detected
+// - security.anomaly: Security anomaly detected

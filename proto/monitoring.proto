@@ -1,0 +1,378 @@
+// Monitoring Service Protocol Buffer Definitions
+// Model performance monitoring, drift detection, and alerting
+
+syntax = "proto3";
+
+package fhe_gbdt.monitoring;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/monitoring";
+
+import "google/protobuf/timestamp.proto";
+
+service MonitoringService {
+  // Prediction logging
+  rpc LogPrediction(LogPredictionRequest) returns (LogPredictionResponse);
+  rpc GetPredictionLogs(GetPredictionLogsRequest) returns (GetPredictionLogsResponse);
+
+  // Performance metrics
+  rpc GetModelMetrics(GetModelMetricsRequest) returns (GetModelMetricsResponse);
+  rpc GetMetricsTimeSeries(GetMetricsTimeSeriesRequest) returns (GetMetricsTimeSeriesResponse);
+  rpc GetLatencyDistribution(GetLatencyDistributionRequest) returns (GetLatencyDistributionResponse);
+
+  // Drift detection
+  rpc SetBaseline(SetBaselineRequest) returns (SetBaselineResponse);
+  rpc DetectDrift(DetectDriftRequest) returns (DetectDriftResponse);
+  rpc GetDriftHistory(GetDriftHistoryRequest) returns (GetDriftHistoryResponse);
+
+  // Alerting
+  rpc CreateAlert(CreateAlertRequest) returns (CreateAlertResponse);
+  rpc UpdateAlert(UpdateAlertRequest) returns (UpdateAlertResponse);
+  rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse);
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  rpc EvaluateAlerts(EvaluateAlertsRequest) returns (EvaluateAlertsResponse);
+  rpc GetAlertHistory(GetAlertHistoryRequest) returns (GetAlertHistoryResponse);
+
+  // Health checks
+  rpc GetModelHealth(GetModelHealthRequest) returns (GetModelHealthResponse);
+  rpc GetSystemHealth(GetSystemHealthRequest) returns (GetSystemHealthResponse);
+}
+
+// ============================================================================
+// Prediction Logging
+// ============================================================================
+
+message LogPredictionRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  string version_id = 3;
+  string request_id = 4;
+  double latency_ms = 5;
+  int64 input_size_bytes = 6;
+  int64 output_size_bytes = 7;
+  map<string, FeatureStat> feature_stats = 8;
+  bool error = 9;
+  string error_message = 10;
+}
+
+message FeatureStat {
+  double value = 1;
+  double min = 2;
+  double max = 3;
+  bool is_null = 4;
+}
+
+message LogPredictionResponse {
+  string prediction_id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+message GetPredictionLogsRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  int32 limit = 5;
+  string page_token = 6;
+}
+
+message PredictionLog {
+  string id = 1;
+  string model_id = 2;
+  string version_id = 3;
+  string request_id = 4;
+  double latency_ms = 5;
+  int64 input_size_bytes = 6;
+  int64 output_size_bytes = 7;
+  bool error = 8;
+  google.protobuf.Timestamp timestamp = 9;
+}
+
+message GetPredictionLogsResponse {
+  repeated PredictionLog logs = 1;
+  string next_page_token = 2;
+}
+
+// ============================================================================
+// Performance Metrics
+// ============================================================================
+
+message GetModelMetricsRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+}
+
+message ModelMetrics {
+  string model_id = 1;
+  int64 total_predictions = 2;
+  double avg_latency_ms = 3;
+  double p50_latency_ms = 4;
+  double p95_latency_ms = 5;
+  double p99_latency_ms = 6;
+  double min_latency_ms = 7;
+  double max_latency_ms = 8;
+  double stddev_latency_ms = 9;
+  double requests_per_minute = 10;
+  double error_rate_percent = 11;
+  google.protobuf.Timestamp period_start = 12;
+  google.protobuf.Timestamp period_end = 13;
+}
+
+message GetModelMetricsResponse {
+  ModelMetrics metrics = 1;
+}
+
+message GetMetricsTimeSeriesRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  string granularity = 5; // minute, hour, day
+}
+
+message MetricsDataPoint {
+  google.protobuf.Timestamp timestamp = 1;
+  int64 count = 2;
+  double avg_latency_ms = 3;
+  double p95_latency_ms = 4;
+  int64 error_count = 5;
+}
+
+message GetMetricsTimeSeriesResponse {
+  repeated MetricsDataPoint data_points = 1;
+  string granularity = 2;
+}
+
+message GetLatencyDistributionRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  int32 num_buckets = 5;
+}
+
+message LatencyBucket {
+  double min_ms = 1;
+  double max_ms = 2;
+  int64 count = 3;
+  double percentage = 4;
+}
+
+message GetLatencyDistributionResponse {
+  repeated LatencyBucket buckets = 1;
+}
+
+// ============================================================================
+// Drift Detection
+// ============================================================================
+
+message SetBaselineRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  map<string, FeatureBaseline> feature_baselines = 3;
+}
+
+message FeatureBaseline {
+  double mean = 1;
+  double stddev = 2;
+  double min = 3;
+  double max = 4;
+  repeated double histogram = 5;
+  repeated double percentiles = 6; // p10, p25, p50, p75, p90
+}
+
+message SetBaselineResponse {
+  string baseline_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
+message DetectDriftRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  int32 window_hours = 3;
+}
+
+message DriftResult {
+  string feature_name = 1;
+  double psi = 2;
+  double ks_statistic = 3;
+  bool drift_detected = 4;
+  double baseline_mean = 5;
+  double current_mean = 6;
+  double baseline_stddev = 7;
+  double current_stddev = 8;
+}
+
+message DetectDriftResponse {
+  string model_id = 1;
+  bool drift_detected = 2;
+  repeated DriftResult results = 3;
+  google.protobuf.Timestamp checked_at = 4;
+}
+
+message GetDriftHistoryRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  int32 limit = 5;
+}
+
+message DriftCheck {
+  string id = 1;
+  string model_id = 2;
+  bool drift_detected = 3;
+  repeated DriftResult results = 4;
+  google.protobuf.Timestamp checked_at = 5;
+}
+
+message GetDriftHistoryResponse {
+  repeated DriftCheck checks = 1;
+}
+
+// ============================================================================
+// Alerting
+// ============================================================================
+
+message CreateAlertRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  string name = 3;
+  string metric = 4; // latency_p95, error_rate, throughput, drift
+  string condition = 5; // gt, gte, lt, lte, eq
+  double threshold = 6;
+  int32 window_minutes = 7;
+  repeated string notification_channels = 8; // email, slack, pagerduty, webhook
+}
+
+message Alert {
+  string id = 1;
+  string tenant_id = 2;
+  string model_id = 3;
+  string name = 4;
+  string metric = 5;
+  string condition = 6;
+  double threshold = 7;
+  int32 window_minutes = 8;
+  repeated string notification_channels = 9;
+  bool enabled = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp last_triggered_at = 12;
+}
+
+message CreateAlertResponse {
+  Alert alert = 1;
+}
+
+message UpdateAlertRequest {
+  string alert_id = 1;
+  string name = 2;
+  string metric = 3;
+  string condition = 4;
+  double threshold = 5;
+  int32 window_minutes = 6;
+  repeated string notification_channels = 7;
+  bool enabled = 8;
+}
+
+message UpdateAlertResponse {
+  Alert alert = 1;
+}
+
+message DeleteAlertRequest {
+  string alert_id = 1;
+}
+
+message DeleteAlertResponse {
+  bool success = 1;
+}
+
+message ListAlertsRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+}
+
+message ListAlertsResponse {
+  repeated Alert alerts = 1;
+}
+
+message EvaluateAlertsRequest {
+  string tenant_id = 1;
+}
+
+message TriggeredAlert {
+  string alert_id = 1;
+  string model_id = 2;
+  string metric = 3;
+  double current_value = 4;
+  double threshold = 5;
+  google.protobuf.Timestamp triggered_at = 6;
+}
+
+message EvaluateAlertsResponse {
+  repeated TriggeredAlert triggered_alerts = 1;
+  google.protobuf.Timestamp evaluated_at = 2;
+}
+
+message GetAlertHistoryRequest {
+  string tenant_id = 1;
+  string alert_id = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  int32 limit = 5;
+}
+
+message AlertIncident {
+  string id = 1;
+  string alert_id = 2;
+  double current_value = 3;
+  double threshold = 4;
+  google.protobuf.Timestamp triggered_at = 5;
+  google.protobuf.Timestamp resolved_at = 6;
+}
+
+message GetAlertHistoryResponse {
+  repeated AlertIncident incidents = 1;
+}
+
+// ============================================================================
+// Health Checks
+// ============================================================================
+
+message GetModelHealthRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+}
+
+message ModelHealth {
+  string model_id = 1;
+  string status = 2; // healthy, degraded, unhealthy
+  double uptime_percent = 3;
+  double error_rate = 4;
+  double avg_latency_ms = 5;
+  int64 predictions_last_hour = 6;
+  google.protobuf.Timestamp last_prediction = 7;
+  repeated string issues = 8;
+}
+
+message GetModelHealthResponse {
+  ModelHealth health = 1;
+}
+
+message GetSystemHealthRequest {
+  string tenant_id = 1;
+}
+
+message ComponentHealth {
+  string name = 1;
+  string status = 2;
+  string message = 3;
+  google.protobuf.Timestamp last_check = 4;
+}
+
+message GetSystemHealthResponse {
+  string overall_status = 1;
+  repeated ComponentHealth components = 2;
+  google.protobuf.Timestamp checked_at = 3;
+}
