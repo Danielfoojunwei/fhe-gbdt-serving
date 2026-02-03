@@ -1,0 +1,274 @@
+// A/B Testing Service Protocol Buffer Definitions
+// Model experiments, traffic allocation, and statistical analysis
+
+syntax = "proto3";
+
+package fhe_gbdt.abtesting;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/abtesting";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+service ABTestingService {
+  // Experiment management
+  rpc CreateExperiment(CreateExperimentRequest) returns (CreateExperimentResponse);
+  rpc GetExperiment(GetExperimentRequest) returns (GetExperimentResponse);
+  rpc UpdateExperiment(UpdateExperimentRequest) returns (UpdateExperimentResponse);
+  rpc DeleteExperiment(DeleteExperimentRequest) returns (DeleteExperimentResponse);
+  rpc ListExperiments(ListExperimentsRequest) returns (ListExperimentsResponse);
+
+  // Experiment lifecycle
+  rpc StartExperiment(StartExperimentRequest) returns (StartExperimentResponse);
+  rpc StopExperiment(StopExperimentRequest) returns (StopExperimentResponse);
+  rpc ConcludeExperiment(ConcludeExperimentRequest) returns (ConcludeExperimentResponse);
+
+  // Traffic assignment
+  rpc AssignVariant(AssignVariantRequest) returns (AssignVariantResponse);
+  rpc GetAssignment(GetAssignmentRequest) returns (GetAssignmentResponse);
+
+  // Event tracking
+  rpc TrackEvent(TrackEventRequest) returns (TrackEventResponse);
+  rpc TrackConversion(TrackConversionRequest) returns (TrackConversionResponse);
+
+  // Results and analysis
+  rpc GetExperimentResults(GetExperimentResultsRequest) returns (GetExperimentResultsResponse);
+  rpc GetPowerAnalysis(GetPowerAnalysisRequest) returns (GetPowerAnalysisResponse);
+}
+
+// ============================================================================
+// Experiment Management
+// ============================================================================
+
+message Variant {
+  string id = 1;
+  string experiment_id = 2;
+  string name = 3;
+  string model_version_id = 4;
+  int32 traffic_percent = 5;
+  bool is_control = 6;
+  string description = 7;
+}
+
+message CreateExperimentRequest {
+  string tenant_id = 1;
+  string name = 2;
+  string description = 3;
+  string model_id = 4;
+  repeated Variant variants = 5;
+  string hypothesis = 6;
+  string primary_metric = 7;
+  repeated string secondary_metrics = 8;
+  int64 min_sample_size = 9;
+  double significance_level = 10;  // Default 0.05
+}
+
+message Experiment {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string description = 4;
+  string model_id = 5;
+  repeated Variant variants = 6;
+  string status = 7;  // draft, running, stopped, concluded
+  string hypothesis = 8;
+  string primary_metric = 9;
+  repeated string secondary_metrics = 10;
+  int64 min_sample_size = 11;
+  double significance_level = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp started_at = 14;
+  google.protobuf.Timestamp ended_at = 15;
+  string winner_variant_id = 16;
+}
+
+message CreateExperimentResponse {
+  Experiment experiment = 1;
+}
+
+message GetExperimentRequest {
+  string experiment_id = 1;
+}
+
+message GetExperimentResponse {
+  Experiment experiment = 1;
+}
+
+message UpdateExperimentRequest {
+  string experiment_id = 1;
+  string name = 2;
+  string description = 3;
+  string hypothesis = 4;
+  int64 min_sample_size = 5;
+}
+
+message UpdateExperimentResponse {
+  Experiment experiment = 1;
+}
+
+message DeleteExperimentRequest {
+  string experiment_id = 1;
+}
+
+message DeleteExperimentResponse {
+  bool success = 1;
+}
+
+message ListExperimentsRequest {
+  string tenant_id = 1;
+  string model_id = 2;
+  string status = 3;
+}
+
+message ExperimentSummary {
+  string id = 1;
+  string name = 2;
+  string model_id = 3;
+  string status = 4;
+  string primary_metric = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp ended_at = 8;
+}
+
+message ListExperimentsResponse {
+  repeated ExperimentSummary experiments = 1;
+}
+
+// ============================================================================
+// Experiment Lifecycle
+// ============================================================================
+
+message StartExperimentRequest {
+  string experiment_id = 1;
+}
+
+message StartExperimentResponse {
+  bool success = 1;
+  google.protobuf.Timestamp started_at = 2;
+}
+
+message StopExperimentRequest {
+  string experiment_id = 1;
+  string reason = 2;
+}
+
+message StopExperimentResponse {
+  bool success = 1;
+  google.protobuf.Timestamp ended_at = 2;
+}
+
+message ConcludeExperimentRequest {
+  string experiment_id = 1;
+  string winner_variant_id = 2;
+  bool deploy_winner = 3;
+}
+
+message ConcludeExperimentResponse {
+  bool success = 1;
+  string deployed_version_id = 2;
+}
+
+// ============================================================================
+// Traffic Assignment
+// ============================================================================
+
+message AssignVariantRequest {
+  string experiment_id = 1;
+  string user_id = 2;  // User ID for consistent assignment
+  map<string, string> attributes = 3;  // Optional targeting attributes
+}
+
+message AssignVariantResponse {
+  string variant_id = 1;
+  string variant_name = 2;
+  string model_version_id = 3;
+  bool is_control = 4;
+}
+
+message GetAssignmentRequest {
+  string experiment_id = 1;
+  string user_id = 2;
+}
+
+message GetAssignmentResponse {
+  string variant_id = 1;
+  string variant_name = 2;
+  bool is_control = 3;
+  google.protobuf.Timestamp assigned_at = 4;
+}
+
+// ============================================================================
+// Event Tracking
+// ============================================================================
+
+message TrackEventRequest {
+  string experiment_id = 1;
+  string variant_id = 2;
+  string user_id = 3;
+  string event_type = 4;  // impression, click, conversion, etc.
+  string metric_name = 5;
+  double metric_value = 6;
+  map<string, google.protobuf.Value> metadata = 7;
+}
+
+message TrackEventResponse {
+  string event_id = 1;
+}
+
+message TrackConversionRequest {
+  string experiment_id = 1;
+  string variant_id = 2;
+  string user_id = 3;
+  string conversion_type = 4;
+  double revenue = 5;
+  map<string, google.protobuf.Value> metadata = 6;
+}
+
+message TrackConversionResponse {
+  string conversion_id = 1;
+}
+
+// ============================================================================
+// Results and Analysis
+// ============================================================================
+
+message GetExperimentResultsRequest {
+  string experiment_id = 1;
+  string metric_name = 2;
+}
+
+message VariantResult {
+  string variant_id = 1;
+  string variant_name = 2;
+  bool is_control = 3;
+  int64 sample_size = 4;
+  double mean = 5;
+  double variance = 6;
+  double confidence_lower = 7;
+  double confidence_upper = 8;
+  double p_value = 9;
+  bool significant = 10;
+  double lift = 11;  // Percentage improvement over control
+}
+
+message GetExperimentResultsResponse {
+  string experiment_id = 1;
+  string metric_name = 2;
+  repeated VariantResult results = 3;
+  string winner = 4;  // Variant ID of winner (if conclusive)
+  bool conclusive = 5;
+}
+
+message GetPowerAnalysisRequest {
+  string experiment_id = 1;
+  double minimum_detectable_effect = 2;
+  double baseline_rate = 3;
+}
+
+message GetPowerAnalysisResponse {
+  int64 required_sample_size = 1;
+  double current_power = 2;
+  int64 estimated_days_remaining = 3;
+  string recommendation = 4;
+}
