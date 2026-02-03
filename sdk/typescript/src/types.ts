@@ -997,3 +997,48 @@ export interface ApiErrorResponse {
    */
   requestId?: string;
 }
+
+// ============================================================================
+// SDK Client Configuration (Simplified)
+// ============================================================================
+
+/**
+ * Configuration for FHE-GBDT SDK Client
+ */
+export interface FHEGBDTConfig {
+  apiKey: string;
+  endpoint: string;
+  tenantId?: string;
+  timeout: number;
+  retries: number;
+  retryDelay: number;
+  useTLS?: boolean;
+  controlEndpoint?: string;
+  billingEndpoint?: string;
+}
+
+/**
+ * Key pair for FHE operations
+ */
+export interface KeyPair {
+  secretKey: Buffer;
+  publicKey: Buffer;
+  evalKeys: Buffer;
+}
+
+/**
+ * Simple predict request for SDK
+ */
+export interface PredictRequest {
+  compiledModelId: string;
+  encryptedPayload: Buffer;
+}
+
+/**
+ * Simple predict response for SDK
+ */
+export interface PredictResponse {
+  encryptedResult: Buffer;
+  latencyMs: number;
+  requestId?: string;
+}
