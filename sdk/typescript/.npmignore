@@ -1,0 +1,51 @@
+# Source files (included via package.json files field)
+# src/
+
+# Development files
+*.ts
+!*.d.ts
+tsconfig.json
+.eslintrc.js
+.eslintignore
+jest.config.js
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+__tests__/
+coverage/
+
+# Examples (not needed in package)
+examples/
+
+# Build artifacts
+*.log
+*.tsbuildinfo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation source (built docs are separate)
+docs/
+
+# Local development
+.env
+.env.*
+*.local

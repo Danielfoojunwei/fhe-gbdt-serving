@@ -1,0 +1,242 @@
+syntax = "proto3";
+
+package metering;
+
+option go_package = "github.com/fhe-gbdt-serving/proto/metering";
+
+import "google/protobuf/timestamp.proto";
+
+// MeteringService provides usage tracking, quota management, and billing metrics
+// for the FHE-GBDT-Serving platform.
+service MeteringService {
+  // RecordUsage records a usage event for billing and analytics
+  rpc RecordUsage(RecordUsageRequest) returns (RecordUsageResponse);
+
+  // GetUsageSummary returns aggregated usage statistics for a tenant
+  rpc GetUsageSummary(GetUsageSummaryRequest) returns (GetUsageSummaryResponse);
+
+  // GetUsageTimeSeries returns time-series usage data for visualization
+  rpc GetUsageTimeSeries(GetUsageTimeSeriesRequest) returns (GetUsageTimeSeriesResponse);
+
+  // GetQuotaStatus returns current quota status for a tenant
+  rpc GetQuotaStatus(GetQuotaStatusRequest) returns (GetQuotaStatusResponse);
+
+  // SetQuota creates or updates quota limits for a tenant
+  rpc SetQuota(SetQuotaRequest) returns (SetQuotaResponse);
+
+  // ListUsageEvents returns detailed usage events for audit/debugging
+  rpc ListUsageEvents(ListUsageEventsRequest) returns (ListUsageEventsResponse);
+}
+
+// UsageEvent represents a single billable event
+message UsageEvent {
+  string event_id = 1;
+  string tenant_id = 2;
+  EventType event_type = 3;
+  string model_id = 4;
+  google.protobuf.Timestamp timestamp = 5;
+
+  // Metrics for this event
+  int64 predictions_count = 6;
+  int64 compute_ms = 7;
+  int64 input_bytes = 8;
+  int64 output_bytes = 9;
+
+  // Additional metadata (request_id, client_ip hash, etc.)
+  map<string, string> metadata = 10;
+}
+
+// EventType categorizes usage events for billing purposes
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_PREDICTION = 1;
+  EVENT_TYPE_MODEL_COMPILE = 2;
+  EVENT_TYPE_MODEL_REGISTER = 3;
+  EVENT_TYPE_KEY_UPLOAD = 4;
+  EVENT_TYPE_KEY_RETRIEVAL = 5;
+}
+
+// RecordUsageRequest is sent by internal services to record usage
+message RecordUsageRequest {
+  UsageEvent event = 1;
+}
+
+message RecordUsageResponse {
+  bool success = 1;
+  string event_id = 2;
+
+  // QuotaWarning is set if tenant is approaching quota limits
+  QuotaWarning quota_warning = 3;
+}
+
+// QuotaWarning indicates quota threshold breaches
+message QuotaWarning {
+  QuotaType quota_type = 1;
+  int64 current_usage = 2;
+  int64 limit = 3;
+  int32 percentage_used = 4;
+  string message = 5;
+}
+
+// GetUsageSummaryRequest requests aggregated usage for a period
+message GetUsageSummaryRequest {
+  string tenant_id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+
+  // Optional: filter by model
+  string model_id = 4;
+
+  // Optional: filter by event type
+  EventType event_type = 5;
+}
+
+message GetUsageSummaryResponse {
+  UsageSummary summary = 1;
+  repeated UsageSummary by_model = 2;
+  repeated UsageSummary by_event_type = 3;
+}
+
+// UsageSummary contains aggregated usage metrics
+message UsageSummary {
+  string tenant_id = 1;
+  string model_id = 2;
+  EventType event_type = 3;
+
+  // Time period
+  google.protobuf.Timestamp period_start = 4;
+  google.protobuf.Timestamp period_end = 5;
+
+  // Aggregated metrics
+  int64 total_events = 6;
+  int64 total_predictions = 7;
+  int64 total_compute_ms = 8;
+  int64 total_input_bytes = 9;
+  int64 total_output_bytes = 10;
+
+  // Derived metrics
+  double avg_latency_ms = 11;
+  double p50_latency_ms = 12;
+  double p95_latency_ms = 13;
+  double p99_latency_ms = 14;
+}
+
+// GetUsageTimeSeriesRequest requests time-bucketed usage data
+message GetUsageTimeSeriesRequest {
+  string tenant_id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+
+  // Bucket size: "minute", "hour", "day", "week", "month"
+  string granularity = 4;
+
+  // Optional filters
+  string model_id = 5;
+  EventType event_type = 6;
+
+  // Metrics to include
+  repeated string metrics = 7;
+}
+
+message GetUsageTimeSeriesResponse {
+  repeated TimeSeriesDataPoint data_points = 1;
+  string granularity = 2;
+}
+
+// TimeSeriesDataPoint represents a single time bucket
+message TimeSeriesDataPoint {
+  google.protobuf.Timestamp timestamp = 1;
+
+  // Core metrics
+  int64 event_count = 2;
+  int64 predictions_count = 3;
+  int64 compute_ms = 4;
+  int64 data_bytes = 5;
+
+  // Optional breakdown
+  map<string, int64> by_model = 6;
+  map<string, int64> by_event_type = 7;
+}
+
+// QuotaType defines what resource is being limited
+enum QuotaType {
+  QUOTA_TYPE_UNSPECIFIED = 0;
+  QUOTA_TYPE_PREDICTIONS_PER_MONTH = 1;
+  QUOTA_TYPE_COMPUTE_MS_PER_MONTH = 2;
+  QUOTA_TYPE_DATA_BYTES_PER_MONTH = 3;
+  QUOTA_TYPE_MODELS_TOTAL = 4;
+  QUOTA_TYPE_REQUESTS_PER_SECOND = 5;
+}
+
+// GetQuotaStatusRequest queries current quota usage
+message GetQuotaStatusRequest {
+  string tenant_id = 1;
+
+  // Optional: query specific quota type
+  QuotaType quota_type = 2;
+}
+
+message GetQuotaStatusResponse {
+  repeated QuotaStatus quotas = 1;
+}
+
+// QuotaStatus represents current usage against a quota limit
+message QuotaStatus {
+  string tenant_id = 1;
+  QuotaType quota_type = 2;
+
+  // Current period
+  int64 limit = 3;
+  int64 used = 4;
+  int64 remaining = 5;
+  int32 percentage_used = 6;
+
+  // When quota resets
+  google.protobuf.Timestamp reset_at = 7;
+
+  // Soft limit warning threshold (e.g., 80%)
+  int32 warning_threshold_percent = 8;
+  bool warning_triggered = 9;
+
+  // Hard limit exceeded
+  bool exceeded = 10;
+}
+
+// SetQuotaRequest creates or updates quota limits
+message SetQuotaRequest {
+  string tenant_id = 1;
+  QuotaType quota_type = 2;
+  int64 limit = 3;
+
+  // Warning threshold percentage (default 80)
+  int32 warning_threshold_percent = 4;
+
+  // Webhook URL for quota notifications
+  string webhook_url = 5;
+}
+
+message SetQuotaResponse {
+  bool success = 1;
+  QuotaStatus quota = 2;
+}
+
+// ListUsageEventsRequest queries individual usage events
+message ListUsageEventsRequest {
+  string tenant_id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+
+  // Filters
+  string model_id = 4;
+  EventType event_type = 5;
+
+  // Pagination
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message ListUsageEventsResponse {
+  repeated UsageEvent events = 1;
+  string next_page_token = 2;
+  int64 total_count = 3;
+}
