@@ -25,3 +25,13 @@ Makefile (if generated)
 
 # Problematic file
 *Lion implementation.*
+
+# CatBoost training artifacts
+catboost_info/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# TypeScript build outputs
+sdk/typescript/dist/
