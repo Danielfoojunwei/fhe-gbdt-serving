@@ -425,24 +425,31 @@ class DPGBDTTrainer:
 
     def _create_xgb_callback(self):
         """Create XGBoost training callback."""
+        import xgboost as xgb
         trainer = self
 
-        class ProgressCallback:
-            def __call__(self, env):
+        class ProgressCallback(xgb.callback.TrainingCallback):
+            """XGBoost callback for progress tracking and DP noise injection."""
+
+            def after_iteration(self, model, epoch, evals_log):
+                """Called after each boosting iteration."""
                 # Update progress
-                trainer.progress = (env.iteration + 1) / trainer.config.n_estimators * 100
+                trainer.progress = (epoch + 1) / trainer.config.n_estimators * 100
 
                 # Apply DP noise if enabled
-                if trainer._privacy_accountant and trainer.config.dp_config.enabled:
-                    trainer._apply_dp_noise_xgb(env)
+                if trainer._privacy_accountant and trainer.config.dp_config and trainer.config.dp_config.enabled:
+                    trainer._apply_dp_noise_xgb_epoch(epoch)
 
                 # Checkpoint
-                if (env.iteration + 1) % trainer.config.checkpoint_interval == 0:
-                    trainer._save_checkpoint(env.iteration + 1)
+                if (epoch + 1) % trainer.config.checkpoint_interval == 0:
+                    trainer._save_checkpoint(epoch + 1)
 
                 # Notify callbacks
                 for cb in trainer._progress_callbacks:
                     cb(trainer.progress, trainer.metrics)
+
+                # Return False to continue training
+                return False
 
         return ProgressCallback()
 
@@ -464,8 +471,8 @@ class DPGBDTTrainer:
 
         return callback
 
-    def _apply_dp_noise_xgb(self, env):
-        """Apply differential privacy noise to XGBoost model."""
+    def _apply_dp_noise_xgb_epoch(self, epoch):
+        """Apply differential privacy noise accounting for XGBoost."""
         if not self.config.dp_config:
             return
 
@@ -494,7 +501,7 @@ class DPGBDTTrainer:
     def _apply_dp_noise_lgb(self, env):
         """Apply differential privacy noise to LightGBM model."""
         # Similar to XGBoost
-        self._apply_dp_noise_xgb(env)
+        self._apply_dp_noise_xgb_epoch(env.iteration)
 
     def _save_checkpoint(self, n_trees: int):
         """Save training checkpoint."""

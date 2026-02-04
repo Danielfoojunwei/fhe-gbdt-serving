@@ -416,10 +416,10 @@ class AuditChain:
         for log_file in sorted(self.storage_path.glob("audit-*.jsonl")):
             file_date_str = log_file.stem.replace("audit-", "")
             try:
-                file_date = datetime.strptime(file_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                file_date = datetime.strptime(file_date_str, "%Y-%m-%d").date()
                 if file_date < start_date.date() or file_date > end_date.date():
                     continue
-            except ValueError:
+            except (ValueError, AttributeError):
                 continue
 
             with open(log_file, 'r') as f:
