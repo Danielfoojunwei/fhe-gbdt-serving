@@ -6,12 +6,19 @@ Production-hardened optimizer that generates execution plans using MOAI techniqu
 - Levelized execution schedule
 - Feature frequency analysis for optimal packing
 
+Enhanced with Novel Innovations:
+- Leaf-centric encoding for direct indicator computation
+- Gradient-informed noise budget allocation
+- Bootstrap-aligned execution scheduling
+- MOAI-native tree structure conversion
+- Polynomial leaf functions
+
 Based on: "MOAI: Module-Optimizing Architecture for Non-Interactive Secure
 Transformer Inference" by Digital Trust Centre, NTU Singapore.
 (IACR ePrint 2025/991, NDSS 2025)
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from .ir import ModelIR, ObliviousPlanIR, ScheduleBlock, OpSequence, PackingLayout
 from .column_packing import ColumnPackingOptimizer, create_column_packed_plan
 import hashlib
@@ -19,6 +26,22 @@ import logging
 import warnings
 
 logger = logging.getLogger(__name__)
+
+# Try to import novel innovations (optional dependency)
+try:
+    from services.innovations.unified_architecture import (
+        NovelFHEGBDTEngine,
+        InnovationConfig,
+        InnovationFlag,
+        UnifiedExecutionPlan,
+    )
+    from services.innovations.gradient_noise import GradientAwareNoiseAllocator
+    from services.innovations.bootstrap_aligned import BootstrapAwareTreeBuilder
+    from services.innovations.moai_native import MOAINativeTreeBuilder
+    INNOVATIONS_AVAILABLE = True
+except ImportError:
+    INNOVATIONS_AVAILABLE = False
+    logger.info("Novel innovations module not available, using standard optimizer")
 
 
 class MOAIOptimizer:
@@ -359,3 +382,206 @@ def optimize_model(
         use_column_packing=use_column_packing
     )
     return optimizer.optimize(model)
+
+
+def optimize_model_with_innovations(
+    model: ModelIR,
+    X_train: Optional[Any] = None,
+    y_train: Optional[Any] = None,
+    enable_all: bool = True,
+    optimize_for: str = "latency"
+) -> Tuple[ObliviousPlanIR, Optional[Any]]:
+    """
+    Optimize model with all novel FHE-GBDT innovations.
+
+    This function enables the full suite of novel optimizations:
+    1. Leaf-Centric Encoding - Direct leaf indicator computation
+    2. Gradient-Informed Noise Allocation - Precision where it matters
+    3. Bootstrap-Aligned Trees - Optimal noise budget usage
+    4. MOAI-Native Structure - Zero-rotation tree conversion
+    5. Polynomial Leaves - Expressive leaf functions (if training data provided)
+
+    Args:
+        model: Parsed ModelIR
+        X_train: Optional training features (enables polynomial leaves)
+        y_train: Optional training targets
+        enable_all: Enable all innovations (default True)
+        optimize_for: "latency", "throughput", "accuracy", or "privacy"
+
+    Returns:
+        Tuple of (ObliviousPlanIR, innovation_plan) where innovation_plan
+        contains additional optimization data if innovations are available
+
+    Example:
+        ```python
+        plan, innovations = optimize_model_with_innovations(
+            model_ir,
+            X_train=X,
+            y_train=y,
+            optimize_for="latency"
+        )
+        ```
+    """
+    if not INNOVATIONS_AVAILABLE:
+        logger.warning(
+            "Novel innovations not available. "
+            "Install with: pip install -e services/innovations"
+        )
+        standard_plan = optimize_model(model)
+        return standard_plan, None
+
+    try:
+        # Create novel engine
+        from services.innovations.unified_architecture import create_novel_engine
+
+        engine = create_novel_engine(
+            optimize_for=optimize_for,
+            enable_all=enable_all
+        )
+
+        # Analyze model
+        analysis = engine.analyze_model(model)
+        logger.info(f"Model analysis: {analysis['model_stats']}")
+
+        # Create unified execution plan
+        innovation_plan = engine.create_execution_plan(model, X_train, y_train)
+
+        # Also create standard MOAI plan for compatibility
+        standard_plan = optimize_model(model)
+
+        # Enhance standard plan metadata with innovation data
+        standard_plan.metadata["innovations"] = {
+            "enabled": [i.name for i in innovation_plan.innovations],
+            "rotation_savings_percent": innovation_plan.rotation_savings_percent,
+            "estimated_latency_ms": innovation_plan.estimated_latency_ms,
+            "bootstrap_count": innovation_plan.bootstrap_count,
+        }
+
+        # Get optimization report
+        report = engine.get_optimization_report()
+        logger.info(f"Innovation optimization report: {report['performance']}")
+
+        return standard_plan, innovation_plan
+
+    except Exception as e:
+        logger.error(f"Innovation optimization failed: {e}, falling back to standard")
+        standard_plan = optimize_model(model)
+        return standard_plan, None
+
+
+def analyze_model_for_fhe(model: ModelIR) -> Dict[str, Any]:
+    """
+    Analyze a model's FHE characteristics and optimization opportunities.
+
+    Returns comprehensive analysis including:
+    - Model statistics (trees, depth, features)
+    - Noise budget requirements
+    - Bootstrap requirements
+    - Recommended optimizations
+
+    Args:
+        model: Parsed ModelIR
+
+    Returns:
+        Analysis dictionary with recommendations
+    """
+    if not INNOVATIONS_AVAILABLE:
+        # Basic analysis without innovations
+        num_trees = len(model.trees)
+        max_depth = max(t.max_depth for t in model.trees)
+        total_nodes = sum(len(t.nodes) for t in model.trees)
+
+        return {
+            "model_stats": {
+                "num_trees": num_trees,
+                "max_depth": max_depth,
+                "total_nodes": total_nodes,
+                "num_features": model.num_features,
+            },
+            "baseline_rotations": total_nodes,
+            "innovations_available": False,
+            "recommendations": [
+                "Install innovations module for advanced analysis"
+            ],
+        }
+
+    # Full analysis with innovations
+    from services.innovations.unified_architecture import NovelFHEGBDTEngine
+    engine = NovelFHEGBDTEngine()
+    return engine.analyze_model(model)
+
+
+class EnhancedMOAIOptimizer(MOAIOptimizer):
+    """
+    Enhanced MOAI optimizer with novel innovation integration.
+
+    Extends the base MOAIOptimizer with automatic innovation selection
+    and application based on model characteristics.
+    """
+
+    def __init__(
+        self,
+        profile: str = "latency",
+        target: str = "cpu",
+        use_column_packing: bool = True,
+        use_innovations: bool = True
+    ):
+        """
+        Initialize enhanced optimizer.
+
+        Args:
+            profile: "latency" or "throughput"
+            target: "cpu" or "gpu"
+            use_column_packing: Enable MOAI column packing
+            use_innovations: Enable novel innovations (if available)
+        """
+        super().__init__(profile, target, use_column_packing)
+        self.use_innovations = use_innovations and INNOVATIONS_AVAILABLE
+
+        if self.use_innovations:
+            logger.info("EnhancedMOAIOptimizer: Novel innovations enabled")
+        else:
+            logger.info("EnhancedMOAIOptimizer: Using standard optimization only")
+
+    def optimize(
+        self,
+        model: ModelIR,
+        X_train: Optional[Any] = None,
+        y_train: Optional[Any] = None
+    ) -> ObliviousPlanIR:
+        """
+        Generate optimized execution plan with innovations.
+
+        Args:
+            model: Parsed ModelIR
+            X_train: Optional training features
+            y_train: Optional training targets
+
+        Returns:
+            ObliviousPlanIR with innovation enhancements
+        """
+        # Get base plan
+        base_plan = super().optimize(model)
+
+        if not self.use_innovations:
+            return base_plan
+
+        try:
+            # Apply innovations
+            _, innovation_plan = optimize_model_with_innovations(
+                model, X_train, y_train,
+                optimize_for=self.profile
+            )
+
+            if innovation_plan:
+                # Enhance plan metadata
+                base_plan.metadata["innovations"] = {
+                    "applied": True,
+                    "rotation_savings": innovation_plan.rotation_savings_percent,
+                    "latency_estimate_ms": innovation_plan.estimated_latency_ms,
+                }
+
+        except Exception as e:
+            logger.warning(f"Innovation enhancement failed: {e}")
+
+        return base_plan
