@@ -1,0 +1,192 @@
+{
+  "timestamp": "2026-02-05T17:06:47.631237",
+  "results": [
+    {
+      "name": "baseline_optimizer",
+      "elapsed_ms": 21.69340400001829,
+      "operations": 10,
+      "throughput": 460.9696108545975,
+      "metadata": {
+        "num_trees": 100,
+        "rotation_savings": {
+          "traditional_rotations": 6300,
+          "moai_rotations": 7,
+          "savings_percent": 99.89,
+          "speedup_factor": 900.0
+        }
+      }
+    },
+    {
+      "name": "innovation_optimizer",
+      "elapsed_ms": 1224.571009999977,
+      "operations": 10,
+      "throughput": 8.166125049783915,
+      "metadata": {
+        "num_trees": 100,
+        "innovations_enabled": [
+          "GRADIENT_NOISE",
+          "FEDERATED_MULTIKEY",
+          "BOOTSTRAP_ALIGNED",
+          "POLYNOMIAL_LEAVES",
+          "STREAMING_GRADIENTS",
+          "HOMOMORPHIC_PRUNING",
+          "MOAI_NATIVE",
+          "LEAF_CENTRIC"
+        ],
+        "rotation_savings_percent": 99.8888888888889,
+        "estimated_latency_ms": 4910.7
+      }
+    },
+    {
+      "name": "leaf_centric",
+      "elapsed_ms": 1075.9267610000052,
+      "operations": 1000,
+      "throughput": 929.4312923963001,
+      "metadata": {
+        "total_leaves": 3200,
+        "max_depth": 6
+      }
+    },
+    {
+      "name": "moai_native_conversion",
+      "elapsed_ms": 51.91899799996236,
+      "operations": 100,
+      "throughput": 1926.0772328478392,
+      "metadata": {
+        "num_oblivious_trees": 100,
+        "accuracy_loss": -1.1621370373814117,
+        "rotation_savings": {
+          "original_rotations": 6300,
+          "oblivious_rotations": 7,
+          "savings_percent": 99.89,
+          "speedup_factor": 900.0
+        }
+      }
+    },
+    {
+      "name": "bootstrap_aligned",
+      "elapsed_ms": 1.4791520000017044,
+      "operations": 10,
+      "throughput": 6760.630415257172,
+      "metadata": {
+        "num_chunks": 100,
+        "bootstrap_points": 98
+      }
+    },
+    {
+      "name": "gradient_noise",
+      "elapsed_ms": 143.96783799998047,
+      "operations": 100,
+      "throughput": 694.5995813315858,
+      "metadata": {
+        "num_features": 50,
+        "avg_precision": 15.12,
+        "precision_range": [
+          13,
+          16
+        ]
+      }
+    },
+    {
+      "name": "homomorphic_pruning",
+      "elapsed_ms": 9.680828000000474,
+      "operations": 10000,
+      "throughput": 1032969.4939316668,
+      "metadata": {
+        "num_trees": 100,
+        "num_active_trees": 50,
+        "pruning_ratio": 0.5
+      }
+    },
+    {
+      "name": "unified_engine",
+      "elapsed_ms": 1056.4190160000066,
+      "operations": 1000,
+      "throughput": 946.5940927363936,
+      "metadata": {
+        "innovations_enabled": [
+          "GRADIENT_NOISE",
+          "BOOTSTRAP_ALIGNED",
+          "MOAI_NATIVE",
+          "LEAF_CENTRIC"
+        ],
+        "rotation_savings_percent": 99.8888888888889,
+        "estimated_latency_ms": 4910.7
+      }
+    },
+    {
+      "name": "baseline_optimizer",
+      "elapsed_ms": 6.286787000021832,
+      "operations": 50,
+      "throughput": 7953.188170654798,
+      "metadata": {
+        "num_trees": 20,
+        "rotation_savings": {
+          "traditional_rotations": 300,
+          "moai_rotations": 5,
+          "savings_percent": 98.33,
+          "speedup_factor": 60.0
+        }
+      }
+    },
+    {
+      "name": "baseline_optimizer",
+      "elapsed_ms": 42.86353499998086,
+      "operations": 20,
+      "throughput": 466.59707371333076,
+      "metadata": {
+        "num_trees": 100,
+        "rotation_savings": {
+          "traditional_rotations": 6300,
+          "moai_rotations": 7,
+          "savings_percent": 99.89,
+          "speedup_factor": 900.0
+        }
+      }
+    },
+    {
+      "name": "baseline_optimizer",
+      "elapsed_ms": 296.7302079999854,
+      "operations": 5,
+      "throughput": 16.85032351003591,
+      "metadata": {
+        "num_trees": 500,
+        "rotation_savings": {
+          "traditional_rotations": 127500,
+          "moai_rotations": 9,
+          "savings_percent": 99.99,
+          "speedup_factor": 14166.67
+        }
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "metric": "Optimization Time",
+      "baseline": 21.69340400001829,
+      "innovation": 1224.571009999977,
+      "improvement_percent": -5544.900219435108,
+      "improvement_factor": 0.017715104981963194
+    },
+    {
+      "metric": "Baseline Rotations",
+      "baseline": 6300,
+      "innovation": 6.999999999998996,
+      "improvement_percent": 99.8888888888889,
+      "improvement_factor": 900.0000000000896
+    }
+  ],
+  "summary": {
+    "total_benchmarks": 11,
+    "innovations_tested": 7,
+    "leaf_centric_throughput": 929.4312923963001,
+    "unified_engine_throughput": 946.5940927363936,
+    "rotation_savings_percent": 99.8888888888889,
+    "moai_rotation_savings": {
+      "original_rotations": 6300,
+      "oblivious_rotations": 7,
+      "savings_percent": 99.89,
+      "speedup_factor": 900.0
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# file: /home/user/fhe-gbdt-serving/services/compiler/parser.py
+# hypothesis_version: 6.151.5
+
+[0.0, 0.5, 'Empty content', 'base_score', 'base_weights', 'border', 'catboost', 'default_left', 'float_feature_index', 'gradient_booster', 'leaf_value', 'leaf_values', 'learner', 'learner_model_param', 'left_child', 'left_children', 'lightgbm', 'model', 'oblivious_trees', 'right_child', 'right_children', 'split_conditions', 'split_feature', 'split_indices', 'splits', 'threshold', 'tree_info', 'tree_structure', 'trees', 'utf-8', 'xgboost']
