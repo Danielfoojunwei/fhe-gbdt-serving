@@ -17,7 +17,7 @@ Benefits:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any, Callable
+from typing import List, Dict, Optional, Any, Callable, Tuple
 import logging
 import math
 
@@ -494,5 +494,3 @@ def prune_ensemble(
     return pruner.prune_plaintext(tree_outputs)
 
 
-# Import for typing
-from typing import Tuple
