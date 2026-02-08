@@ -443,6 +443,31 @@ class FHEPolynomialEvaluator:
 
         return result
 
+    def evaluate_horner(
+        self,
+        coeffs: np.ndarray,
+        num_coeffs: int,
+        x: float
+    ) -> float:
+        """
+        Evaluate polynomial using Horner's method in plaintext.
+
+        Computes c_0 + c_1*x + c_2*x^2 + ... efficiently as
+        c_0 + x*(c_1 + x*(c_2 + ...))
+
+        Args:
+            coeffs: Polynomial coefficients [c_0, c_1, ..., c_n]
+            num_coeffs: Number of coefficients
+            x: Evaluation point
+
+        Returns:
+            Polynomial value at x
+        """
+        result = float(coeffs[num_coeffs - 1])
+        for i in range(num_coeffs - 2, -1, -1):
+            result = result * x + float(coeffs[i])
+        return result
+
     def estimate_noise_cost(self, degree: int) -> float:
         """Estimate noise cost for polynomial of given degree."""
         # Each multiplication doubles noise approximately
