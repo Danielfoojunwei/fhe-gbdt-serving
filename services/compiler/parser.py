@@ -102,7 +102,11 @@ class XGBoostParser(BaseParser):
                 max_depth=max_depth
             ))
 
-        base_score = float(data.get('learner', {}).get('learner_model_param', {}).get('base_score', 0.5))
+        raw_base = data.get('learner', {}).get('learner_model_param', {}).get('base_score', 0.5)
+        # XGBoost >= 2.0 may store base_score as '[value]' array string
+        if isinstance(raw_base, str):
+            raw_base = raw_base.strip('[] ')
+        base_score = float(raw_base)
 
         logger.info(f"Parsed XGBoost model: {len(model_ir_trees)} trees, {max_feature_id + 1} features")
 
