@@ -272,15 +272,29 @@ def get_parser(library_type: str) -> Optional[BaseParser]:
     Get the appropriate parser for a library type.
 
     Args:
-        library_type: One of 'xgboost', 'lightgbm', 'catboost'
+        library_type: One of 'xgboost', 'lightgbm', 'catboost',
+                       'logistic_regression', 'random_forest',
+                       'decision_tree', 'glm'
 
     Returns:
         Parser instance or None if not supported
     """
+    # Lazy imports to avoid circular dependencies
+    from .sklearn_parser import (
+        ScikitLearnLogisticRegressionParser,
+        ScikitLearnRandomForestParser,
+        ScikitLearnDecisionTreeParser,
+    )
+    from .glm_parser import StatsmodelsGLMParser
+
     parsers = {
         "xgboost": XGBoostParser(),
         "lightgbm": LightGBMParser(),
-        "catboost": CatBoostParser()
+        "catboost": CatBoostParser(),
+        "logistic_regression": ScikitLearnLogisticRegressionParser(),
+        "random_forest": ScikitLearnRandomForestParser(),
+        "decision_tree": ScikitLearnDecisionTreeParser(),
+        "glm": StatsmodelsGLMParser(),
     }
     return parsers.get(library_type.lower())
 
