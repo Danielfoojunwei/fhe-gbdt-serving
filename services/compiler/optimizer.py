@@ -18,6 +18,7 @@ Transformer Inference" by Digital Trust Centre, NTU Singapore.
 (IACR ePrint 2025/991, NDSS 2025)
 """
 
+from collections import Counter, defaultdict
 from typing import List, Dict, Optional, Tuple, Any
 from .ir import ModelIR, ObliviousPlanIR, ScheduleBlock, OpSequence, PackingLayout
 from .column_packing import ColumnPackingOptimizer, create_column_packed_plan
@@ -172,12 +173,11 @@ class MOAIOptimizer:
 
         Returns dict of feature_id -> usage_count
         """
-        counts: Dict[int, int] = {}
+        counts: Counter = Counter()
         for tree in model.trees:
             for node in tree.nodes.values():
-                # Check if this is a split node (not a leaf)
                 if node.feature_index is not None:
-                    counts[node.feature_index] = counts.get(node.feature_index, 0) + 1
+                    counts[node.feature_index] += 1
         return counts
 
     def _create_packing_layout(
@@ -260,17 +260,14 @@ class MOAIOptimizer:
         access. With column packing enabled, we emit 0-offset rotations.
         """
         # Group nodes by feature for efficient batching
-        feature_groups: Dict[int, List[Tuple[int, int, float]]] = {}
+        feature_groups: Dict[int, List[Tuple[int, int, float]]] = defaultdict(list)
 
         for tree_idx, tree in enumerate(model.trees):
             nodes_at_depth = [n for n in tree.nodes.values() if n.depth == depth]
 
             for node in nodes_at_depth:
                 if node.feature_index is not None and node.threshold is not None:
-                    feat_idx = node.feature_index
-                    if feat_idx not in feature_groups:
-                        feature_groups[feat_idx] = []
-                    feature_groups[feat_idx].append(
+                    feature_groups[node.feature_index].append(
                         (tree_idx, node.node_id, node.threshold)
                     )
 
@@ -294,7 +291,7 @@ class MOAIOptimizer:
                 ))
         else:
             # Traditional: Group by rotation offset
-            rotation_groups: Dict[int, List[Tuple[int, float]]] = {}
+            rotation_groups: Dict[int, List[Tuple[int, float]]] = defaultdict(list)
 
             for feat_idx, items in feature_groups.items():
                 f_slot = feature_map.get(feat_idx, 0)
@@ -302,9 +299,6 @@ class MOAIOptimizer:
                 for tree_idx, node_id, threshold in items:
                     t_slot = tree_idx % self.batch_size
                     offset = (f_slot - t_slot) % self.batch_size
-
-                    if offset not in rotation_groups:
-                        rotation_groups[offset] = []
                     rotation_groups[offset].append((tree_idx, threshold))
 
             for offset, items in rotation_groups.items():

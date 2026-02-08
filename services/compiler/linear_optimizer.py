@@ -210,17 +210,18 @@ class LinearModelOptimizer:
         weights = coefficients.weights
 
         # Map coefficient magnitudes to feature importance
-        abs_weights = [abs(w) for w in weights]
-        max_weight = max(abs_weights) if abs_weights else 1.0
+        max_weight = max((abs(w) for w in weights), default=1.0) or 1.0
 
         importance_map = {}
-        for i, w in enumerate(abs_weights):
+        for i, w in enumerate(weights):
+            abs_w = abs(w)
+            norm_w = abs_w / max_weight
             importance_map[i] = FeatureImportance(
                 feature_idx=i,
-                gradient_importance=w / max_weight if max_weight > 0 else 0.0,
+                gradient_importance=norm_w,
                 frequency=1,
-                average_split_gain=w,
-                depth_weighted_importance=w / max_weight if max_weight > 0 else 0.0,
+                average_split_gain=abs_w,
+                depth_weighted_importance=norm_w,
             )
 
         allocator = GradientAwareNoiseAllocator()
@@ -228,10 +229,17 @@ class LinearModelOptimizer:
             importance_map, coefficients.num_features
         )
 
-        precision_bits = [a.precision_bits for a in allocations.values()]
+        if allocations:
+            precision_bits = [a.precision_bits for a in allocations.values()]
+            avg_p = sum(precision_bits) / len(precision_bits)
+            min_p = min(precision_bits)
+            max_p = max(precision_bits)
+        else:
+            avg_p, min_p, max_p = 12, 8, 16
+
         return {
-            "avg_precision": sum(precision_bits) / len(precision_bits) if precision_bits else 12,
-            "min_precision": min(precision_bits) if precision_bits else 8,
-            "max_precision": max(precision_bits) if precision_bits else 16,
+            "avg_precision": avg_p,
+            "min_precision": min_p,
+            "max_precision": max_p,
             "innovation": "gradient_noise_allocation",
         }

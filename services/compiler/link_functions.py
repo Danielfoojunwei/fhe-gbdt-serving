@@ -19,6 +19,7 @@ Horner's method, which has optimal multiplicative depth for FHE.
 import math
 import logging
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import List, Dict, Optional, Tuple
 
 import numpy as np
@@ -99,6 +100,16 @@ class LinkFunctionApproximator:
         if domain is None:
             domain = self.DEFAULT_DOMAINS.get(link_name, (-8.0, 8.0))
 
+        return self._approximate_cached(link_name, degree, domain)
+
+    @lru_cache(maxsize=32)
+    def _approximate_cached(
+        self,
+        link_name: str,
+        degree: int,
+        domain: Tuple[float, float],
+    ) -> LinkApproximation:
+        """Cached implementation of approximate()."""
         if link_name == "identity":
             return self._identity_approximation(domain)
         elif link_name == "logit":
@@ -337,9 +348,7 @@ class LinkFunctionApproximator:
         return result
 
 
-def _erf_vectorized(x: np.ndarray) -> np.ndarray:
-    """Vectorized error function approximation."""
-    return np.vectorize(math.erf)(x)
+_erf_vectorized = np.vectorize(math.erf, otypes=[np.float64])
 
 
 def get_link_approximation(

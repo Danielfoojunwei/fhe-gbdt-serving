@@ -167,7 +167,7 @@ class FHEPreprocessor:
         Returns:
             Transformed features ready for encryption
         """
-        result = features.copy().astype(np.float64)
+        result = np.array(features, dtype=np.float64, copy=True)
 
         # 1. WoE binning
         if self._woe_transformer and feature_names:

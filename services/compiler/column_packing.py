@@ -68,8 +68,7 @@ class ColumnPackedLayout:
             raise ValueError(f"slots_per_ciphertext exceeds max {self.MAX_SLOTS}")
 
         self.num_ciphertexts = self.num_features
-        for i in range(self.num_features):
-            self.feature_to_ct_index[i] = i
+        self.feature_to_ct_index = {i: i for i in range(self.num_features)}
 
         logger.debug(f"ColumnPackedLayout: {self.num_features} features, "
                     f"{self.slots_per_ciphertext} slots/ct")

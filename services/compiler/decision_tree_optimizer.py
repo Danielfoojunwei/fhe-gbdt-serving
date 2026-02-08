@@ -19,6 +19,7 @@ for adverse action explanations.
 import hashlib
 import logging
 import math
+from collections import Counter
 from typing import Dict, List, Optional, Tuple, Any
 
 from .ir import (
@@ -175,11 +176,11 @@ class DecisionTreeOptimizer:
             raise ValueError(f"Tree depth {tree.max_depth} exceeds max {self.MAX_DEPTH}")
 
     def _analyze_frequency(self, model: ModelIR) -> Dict[int, int]:
-        counts: Dict[int, int] = {}
+        counts: Counter = Counter()
         for tree in model.trees:
             for node in tree.nodes.values():
                 if node.feature_index is not None:
-                    counts[node.feature_index] = counts.get(node.feature_index, 0) + 1
+                    counts[node.feature_index] += 1
         return counts
 
     def _build_schedule(

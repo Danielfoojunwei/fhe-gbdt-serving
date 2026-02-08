@@ -16,6 +16,7 @@ Key differences from GBDT:
 import hashlib
 import logging
 import math
+from collections import Counter, defaultdict
 from typing import Dict, List, Optional, Tuple, Any
 
 from .ir import (
@@ -179,11 +180,11 @@ class RandomForestOptimizer:
             raise ValueError(f"Too many trees: {len(model.trees)}")
 
     def _analyze_frequency(self, model: ModelIR) -> Dict[int, int]:
-        counts: Dict[int, int] = {}
+        counts: Counter = Counter()
         for tree in model.trees:
             for node in tree.nodes.values():
                 if node.feature_index is not None:
-                    counts[node.feature_index] = counts.get(node.feature_index, 0) + 1
+                    counts[node.feature_index] += 1
         return counts
 
     def _create_packing_layout(
@@ -204,7 +205,7 @@ class RandomForestOptimizer:
         schedule: List[ScheduleBlock] = []
 
         for depth in range(max_depth):
-            feature_groups: Dict[int, List[Tuple[int, int, float]]] = {}
+            feature_groups: Dict[int, List[Tuple[int, int, float]]] = defaultdict(list)
 
             for tree_idx, tree in enumerate(model.trees):
                 nodes_at_depth = [
@@ -212,10 +213,7 @@ class RandomForestOptimizer:
                     if n.depth == depth and n.feature_index is not None
                 ]
                 for node in nodes_at_depth:
-                    feat_idx = node.feature_index
-                    if feat_idx not in feature_groups:
-                        feature_groups[feat_idx] = []
-                    feature_groups[feat_idx].append(
+                    feature_groups[node.feature_index].append(
                         (tree_idx, node.node_id, node.threshold)
                     )
 

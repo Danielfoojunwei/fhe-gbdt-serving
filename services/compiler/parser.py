@@ -7,6 +7,7 @@ Converts library-specific formats to unified TreeIR for MOAI execution.
 
 import json
 import logging
+from functools import lru_cache
 from typing import Dict, List, Optional
 from .ir import TreeIR, TreeNode, ModelIR
 
@@ -267,9 +268,12 @@ class CatBoostParser(BaseParser):
         )
 
 
+@lru_cache(maxsize=None)
 def get_parser(library_type: str) -> Optional[BaseParser]:
     """
     Get the appropriate parser for a library type.
+
+    Parser instances are cached since they are stateless.
 
     Args:
         library_type: One of 'xgboost', 'lightgbm', 'catboost',
@@ -287,16 +291,18 @@ def get_parser(library_type: str) -> Optional[BaseParser]:
     )
     from .glm_parser import StatsmodelsGLMParser
 
+    key = library_type.lower()
     parsers = {
-        "xgboost": XGBoostParser(),
-        "lightgbm": LightGBMParser(),
-        "catboost": CatBoostParser(),
-        "logistic_regression": ScikitLearnLogisticRegressionParser(),
-        "random_forest": ScikitLearnRandomForestParser(),
-        "decision_tree": ScikitLearnDecisionTreeParser(),
-        "glm": StatsmodelsGLMParser(),
+        "xgboost": XGBoostParser,
+        "lightgbm": LightGBMParser,
+        "catboost": CatBoostParser,
+        "logistic_regression": ScikitLearnLogisticRegressionParser,
+        "random_forest": ScikitLearnRandomForestParser,
+        "decision_tree": ScikitLearnDecisionTreeParser,
+        "glm": StatsmodelsGLMParser,
     }
-    return parsers.get(library_type.lower())
+    parser_cls = parsers.get(key)
+    return parser_cls() if parser_cls else None
 
 
 def parse_model(content: bytes, library_type: str) -> ModelIR:
