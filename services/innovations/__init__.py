@@ -20,6 +20,10 @@ Novel Directions:
     for linear models, single trees, random forests, and boosted ensembles.
     Includes comparison-free linear inference, independent noise channels,
     precision-adaptive sign, and encrypted majority vote.
+12. FHE-Aware Tree Training - Modifies tree training to select thresholds
+    that minimize polynomial sign approximation error during FHE inference.
+    First work to optimize thresholds during training for FHE accuracy
+    (SMART-PAF 2024 only did this for neural nets, not trees).
 
 Based on:
 - MOAI: Module-Optimizing Architecture for Non-Interactive Secure Inference (NDSS 2025)
@@ -92,6 +96,16 @@ from .model_aware_fhe import (
     EncryptedMajorityVote,
 )
 
+from .fhe_aware_training import (
+    FHEAwareTreeTrainer,
+    FHEAwareTrainingConfig,
+    FHEAwareSplitCriterion,
+    FHEErrorAnalyzer,
+    SignPolynomialAnalyzer,
+    train_fhe_aware_trees,
+    compare_training_approaches,
+)
+
 __all__ = [
     # Leaf-Centric
     "LeafCentricEncoder",
@@ -139,6 +153,14 @@ __all__ = [
     "IndependentNoiseOptimizer",
     "PrecisionAdaptiveSign",
     "EncryptedMajorityVote",
+    # FHE-Aware Training
+    "FHEAwareTreeTrainer",
+    "FHEAwareTrainingConfig",
+    "FHEAwareSplitCriterion",
+    "FHEErrorAnalyzer",
+    "SignPolynomialAnalyzer",
+    "train_fhe_aware_trees",
+    "compare_training_approaches",
 ]
 
 __version__ = "1.0.0"
