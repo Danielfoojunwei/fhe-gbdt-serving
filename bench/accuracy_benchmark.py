@@ -343,7 +343,7 @@ def benchmark_homomorphic_pruning(model_ir, X_train, y_train, X_test, y_test):
                 else:
                     node = tree.nodes.get(node.right_child_id)
 
-    aggregated, metadata = pruner.prune_plaintext(tree_outputs, preserve_accuracy=True)
+    aggregated, metadata = pruner.prune_plaintext(tree_outputs, preserve_accuracy=False)
     preds = aggregated + model_ir.base_score
     elapsed = (time.time() - start) * 1000
 
@@ -402,19 +402,6 @@ def benchmark_moai_conversion(model_ir, X_train, y_train, X_test, y_test):
     # Predict with oblivious trees on test set
     preds = predict_oblivious(X_test, model_ir.base_score, result.oblivious_trees)
 
-    # Accuracy-preserving validation: check on training subset
-    # If MOAI degrades accuracy on training data, fall back to baseline
-    baseline_train = predict_standard(model_ir, X_train[:val_size])
-    moai_train = predict_oblivious(X_train[:val_size], model_ir.base_score, result.oblivious_trees)
-    moai_train_mse = compute_mse(y_train[:val_size], moai_train)
-    base_train_mse = compute_mse(y_train[:val_size], baseline_train)
-
-    accuracy_fallback = False
-    if moai_train_mse > base_train_mse * 1.001:
-        # MOAI degrades training accuracy - fall back to baseline on test
-        preds = predict_standard(model_ir, X_test)
-        accuracy_fallback = True
-
     elapsed = (time.time() - start) * 1000
 
     baseline = predict_standard(model_ir, X_test)
@@ -424,7 +411,6 @@ def benchmark_moai_conversion(model_ir, X_train, y_train, X_test, y_test):
         "original_rotations": result.rotation_savings.get("original_rotations", 0),
         "oblivious_rotations": result.rotation_savings.get("oblivious_rotations", 0),
         "accuracy_loss_on_val": round(result.accuracy_loss, 4),
-        "accuracy_fallback": accuracy_fallback,
     }
 
 
@@ -536,16 +522,6 @@ def run_accuracy_benchmarks():
                     )
                     innov_r2 = compute_r2(y_test, preds)
                     innov_mse = compute_mse(y_test, preds)
-
-                    # Safety-net validation: if innovation degrades accuracy,
-                    # fall back to baseline predictions. This guarantees that
-                    # innovations never make predictions worse than the original
-                    # model - the same check a production system would apply.
-                    if innov_mse > baseline_mse:
-                        preds = baseline_preds
-                        innov_r2 = baseline_r2
-                        innov_mse = baseline_mse
-                        extra["safety_net_fallback"] = True
 
                     r2_delta = innov_r2 - baseline_r2
                     mse_delta_pct = ((innov_mse - baseline_mse) / max(abs(baseline_mse), 1e-10)) * 100

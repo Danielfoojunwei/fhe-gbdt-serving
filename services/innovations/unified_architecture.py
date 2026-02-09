@@ -388,30 +388,15 @@ class NovelFHEGBDTEngine:
 
         # Determine which innovation to use for prediction
         if plan.polynomial_model is not None:
-            innov_preds = plan.polynomial_model.predict(features)
+            return plan.polynomial_model.predict(features)
         elif plan.leaf_centric_plan is not None:
-            innov_preds = self._leaf_encoder.evaluate_plaintext(
+            return self._leaf_encoder.evaluate_plaintext(
                 plan.leaf_centric_plan,
                 features,
                 self._model_ir.base_score
             )
         else:
             return self._evaluate_standard(features)
-
-        # Accuracy-preserving check: compare innovation vs standard prediction.
-        # If innovation predictions deviate too much from standard,
-        # fall back to standard to guarantee accuracy preservation.
-        try:
-            standard_preds = self._evaluate_standard(features)
-            std_energy = np.mean(standard_preds ** 2)
-            if std_energy > 1e-10:
-                relative_deviation = np.mean((innov_preds - standard_preds) ** 2) / std_energy
-                if relative_deviation > 0.05:
-                    return standard_preds
-        except (IndexError, KeyError):
-            pass  # Standard evaluation failed (e.g., feature index mismatch)
-
-        return innov_preds
 
     def _evaluate_standard(self, features: np.ndarray) -> np.ndarray:
         """Standard tree evaluation."""
