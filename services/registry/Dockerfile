@@ -2,6 +2,6 @@
 FROM golang:1.21-alpine
 WORKDIR /app
 COPY . .
-RUN go build -o registry main.go
+RUN go build -o registry ./services/registry/
 EXPOSE 8081
 CMD ["./registry"]
