@@ -157,11 +157,16 @@ class TestLeafCentricEncoding:
         x = np.array([0.1, 0.5, 0.9])
         signs = computer.polynomial_sign(x)
 
-        # Should map to approximately [0, 0.5, 1]
+        # With iterative sign sharpening, the function is steeper:
+        # sign(0.1) ≈ near 0 (small positive, close to steep boundary)
+        # sign(0.5) ≈ clearly positive (> 0.5)
+        # sign(0.9) ≈ 1.0 (fully positive)
         assert signs.shape == (3,)
-        assert 0 <= signs[0] <= 0.55  # Allow tolerance for polynomial approximation
-        assert 0.4 <= signs[1] <= 0.6
-        assert 0.5 <= signs[2] <= 1.0
+        assert 0 <= signs[0] <= 0.5   # Small positive: near boundary
+        assert signs[1] >= 0.5        # Moderate positive: clearly > 0.5
+        assert signs[2] >= 0.9        # Large positive: essentially 1.0
+        # Key property: monotonically increasing
+        assert signs[0] < signs[1] < signs[2]
 
     def test_leaf_indicator_tensor_product(self):
         """Test tensor product leaf indicator computation."""
