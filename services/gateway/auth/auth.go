@@ -41,21 +41,21 @@ type TenantContext struct {
 var (
 	secretsManager secrets.SecretsManager
 	secretsOnce    sync.Once
-	secretsErr     error
+	smErr          error
 )
 
 // InitSecretsManager initializes the secrets manager with the given configuration.
 // This should be called during service startup.
 func InitSecretsManager(cfg secrets.Config) error {
 	secretsOnce.Do(func() {
-		secretsManager, secretsErr = secrets.NewSecretsManager(cfg)
-		if secretsErr != nil {
-			log.Printf("ERROR: Failed to initialize secrets manager: %v", secretsErr)
+		secretsManager, smErr = secrets.NewSecretsManager(cfg)
+		if smErr != nil {
+			log.Printf("ERROR: Failed to initialize secrets manager: %v", smErr)
 		} else {
 			log.Printf("INFO: Secrets manager initialized (backend: %s)", cfg.Backend)
 		}
 	})
-	return secretsErr
+	return smErr
 }
 
 // GetSecretsManager returns the initialized secrets manager.
@@ -63,9 +63,9 @@ func InitSecretsManager(cfg secrets.Config) error {
 func GetSecretsManager() secrets.SecretsManager {
 	secretsOnce.Do(func() {
 		cfg := secrets.DefaultConfig()
-		secretsManager, secretsErr = secrets.NewSecretsManager(cfg)
-		if secretsErr != nil {
-			log.Printf("ERROR: Failed to initialize secrets manager with defaults: %v", secretsErr)
+		secretsManager, smErr = secrets.NewSecretsManager(cfg)
+		if smErr != nil {
+			log.Printf("ERROR: Failed to initialize secrets manager with defaults: %v", smErr)
 		}
 	})
 	return secretsManager

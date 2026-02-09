@@ -6,6 +6,7 @@ option go_package = "github.com/fhe-gbdt-serving/proto/crypto";
 
 service CryptoKeyService {
   rpc UploadEvalKeys(UploadEvalKeysRequest) returns (UploadEvalKeysResponse);
+  rpc GetEvalKeys(GetEvalKeysRequest) returns (GetEvalKeysResponse);
   rpc RotateKeys(RotateKeysRequest) returns (RotateKeysResponse);
   rpc RevokeKeys(RevokeKeysRequest) returns (RevokeKeysResponse);
 }
@@ -18,6 +19,16 @@ message UploadEvalKeysRequest {
 
 message UploadEvalKeysResponse {
   bool success = 1;
+}
+
+message GetEvalKeysRequest {
+  string tenant_id = 1;
+  string compiled_model_id = 2;
+}
+
+message GetEvalKeysResponse {
+  bytes eval_keys = 1;
+  bool found = 2;
 }
 
 message RotateKeysRequest {

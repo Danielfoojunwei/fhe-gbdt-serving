@@ -1,7 +1,7 @@
 """
 FHE-GBDT Novel Innovations Module
 
-This module implements 10 novel architectural innovations that leverage GBDT first
+This module implements 11 novel architectural innovations that leverage GBDT first
 principles with FHE MOAI and N2HE to unlock new capabilities in privacy-preserving
 machine learning.
 
@@ -16,6 +16,14 @@ Novel Directions:
 8. Streaming Encrypted Gradients - Online learning in encrypted domain
 9. Unified Architecture - Integrated novel FHE-GBDT system
 10. C++ Kernel Extensions - High-performance novel primitives
+11. Model-Aware FHE Optimization - Model-specific FHE evaluation paths
+    for linear models, single trees, random forests, and boosted ensembles.
+    Includes comparison-free linear inference, independent noise channels,
+    precision-adaptive sign, and encrypted majority vote.
+12. FHE-Aware Tree Training - Modifies tree training to select thresholds
+    that minimize polynomial sign approximation error during FHE inference.
+    First work to optimize thresholds during training for FHE accuracy
+    (SMART-PAF 2024 only did this for neural nets, not trees).
 
 Based on:
 - MOAI: Module-Optimizing Architecture for Non-Interactive Secure Inference (NDSS 2025)
@@ -77,6 +85,27 @@ from .unified_architecture import (
     UnifiedExecutionPlan,
 )
 
+from .model_aware_fhe import (
+    ModelAwareFHEEngine,
+    ModelStructureClassifier,
+    ModelStructureType,
+    ComparisonFreeLinearEvaluator,
+    LinkFunctionLibrary,
+    IndependentNoiseOptimizer,
+    PrecisionAdaptiveSign,
+    EncryptedMajorityVote,
+)
+
+from .fhe_aware_training import (
+    FHEAwareTreeTrainer,
+    FHEAwareTrainingConfig,
+    FHEAwareSplitCriterion,
+    FHEErrorAnalyzer,
+    SignPolynomialAnalyzer,
+    train_fhe_aware_trees,
+    compare_training_approaches,
+)
+
 __all__ = [
     # Leaf-Centric
     "LeafCentricEncoder",
@@ -115,6 +144,23 @@ __all__ = [
     "NovelFHEGBDTEngine",
     "InnovationConfig",
     "UnifiedExecutionPlan",
+    # Model-Aware FHE
+    "ModelAwareFHEEngine",
+    "ModelStructureClassifier",
+    "ModelStructureType",
+    "ComparisonFreeLinearEvaluator",
+    "LinkFunctionLibrary",
+    "IndependentNoiseOptimizer",
+    "PrecisionAdaptiveSign",
+    "EncryptedMajorityVote",
+    # FHE-Aware Training
+    "FHEAwareTreeTrainer",
+    "FHEAwareTrainingConfig",
+    "FHEAwareSplitCriterion",
+    "FHEErrorAnalyzer",
+    "SignPolynomialAnalyzer",
+    "train_fhe_aware_trees",
+    "compare_training_approaches",
 ]
 
 __version__ = "1.0.0"
