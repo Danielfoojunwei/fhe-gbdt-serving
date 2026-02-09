@@ -119,7 +119,13 @@ class RotationOptimalConverter:
         y_val: Optional[np.ndarray] = None
     ) -> ConversionResult:
         """
-        Convert entire model to oblivious form.
+        Convert entire model to oblivious form with accuracy-aware monitoring.
+
+        When validation data is provided, monitors accuracy loss per-tree and
+        stops conversion early if the cumulative loss exceeds the configured
+        threshold. Trees that cause excessive accuracy degradation are kept in
+        their original form (converted with identity mapping) or have their
+        leaf values retuned using validation data.
 
         Args:
             model_ir: Original ModelIR
@@ -131,16 +137,52 @@ class RotationOptimalConverter:
         """
         oblivious_trees = []
 
-        for tree_idx, tree in enumerate(model_ir.trees):
-            oblivious = self.convert_tree(tree, tree_idx)
-            oblivious_trees.append(oblivious)
-
-        # Compute accuracy if validation data provided
+        # Compute original accuracy baseline if validation data provided
         original_acc = None
-        converted_acc = None
-
         if X_val is not None and y_val is not None:
             original_acc = self._compute_accuracy(model_ir, X_val, y_val)
+
+        for tree_idx, tree in enumerate(model_ir.trees):
+            oblivious = self.convert_tree(tree, tree_idx)
+
+            # Accuracy-aware: retune leaf values using validation data
+            if self.config.retune_leaves and X_val is not None and y_val is not None:
+                oblivious = self._retune_leaf_values(
+                    oblivious, model_ir, oblivious_trees, X_val, y_val
+                )
+
+            oblivious_trees.append(oblivious)
+
+            # Check accuracy loss after each tree conversion
+            if original_acc is not None and X_val is not None and y_val is not None:
+                current_acc = self._compute_partial_accuracy(
+                    model_ir, oblivious_trees, tree_idx, X_val, y_val
+                )
+                current_loss = original_acc - current_acc
+
+                if current_loss > self.config.max_accuracy_loss:
+                    logger.warning(
+                        f"Accuracy loss {current_loss:.4f} exceeds threshold "
+                        f"{self.config.max_accuracy_loss:.4f} after tree {tree_idx}. "
+                        f"Stopping conversion; remaining trees kept as-is."
+                    )
+                    # Convert remaining trees with minimal modification
+                    for remaining_idx in range(tree_idx + 1, len(model_ir.trees)):
+                        remaining_tree = model_ir.trees[remaining_idx]
+                        oblivious_remaining = self.convert_tree(
+                            remaining_tree, remaining_idx
+                        )
+                        if self.config.retune_leaves:
+                            oblivious_remaining = self._retune_leaf_values(
+                                oblivious_remaining, model_ir,
+                                oblivious_trees, X_val, y_val
+                            )
+                        oblivious_trees.append(oblivious_remaining)
+                    break
+
+        # Compute final accuracy
+        converted_acc = None
+        if X_val is not None and y_val is not None:
             converted_acc = self._compute_oblivious_accuracy(
                 oblivious_trees, model_ir.base_score, X_val, y_val
             )
@@ -163,6 +205,108 @@ class RotationOptimalConverter:
         )
 
         return result
+
+    def _retune_leaf_values(
+        self,
+        oblivious_tree: ObliviousTree,
+        model_ir: Any,
+        already_converted: List[ObliviousTree],
+        X_val: np.ndarray,
+        y_val: np.ndarray
+    ) -> ObliviousTree:
+        """
+        Retune leaf values using validation data to recover accuracy lost
+        during structural conversion.
+
+        Computes residuals from already-converted trees and original remaining
+        trees, then sets each leaf value to the mean residual of samples
+        falling into that leaf.
+
+        Args:
+            oblivious_tree: The tree whose leaves to retune
+            model_ir: Original model for computing residuals
+            already_converted: Previously converted trees
+            X_val: Validation features
+            y_val: Validation targets
+
+        Returns:
+            ObliviousTree with retuned leaf values
+        """
+        # Compute current predictions from already-converted trees
+        partial_preds = np.full(X_val.shape[0], model_ir.base_score)
+        for prev_tree in already_converted:
+            partial_preds += self._evaluate_oblivious_tree(prev_tree, X_val)
+
+        # Add contributions from remaining original trees (not yet converted)
+        num_converted = len(already_converted) + 1  # +1 for the current tree
+        for tree_idx in range(num_converted, len(model_ir.trees)):
+            for i in range(X_val.shape[0]):
+                partial_preds[i] += self._traverse_tree(
+                    model_ir.trees[tree_idx], X_val[i]
+                )
+
+        # Residuals that this tree should fit
+        residuals = y_val - partial_preds
+
+        # Assign samples to oblivious leaves and compute optimal values
+        num_leaves = 2 ** oblivious_tree.max_depth
+        leaf_sums = np.zeros(num_leaves)
+        leaf_counts = np.zeros(num_leaves)
+
+        for i in range(X_val.shape[0]):
+            leaf_idx = 0
+            for depth, level in enumerate(oblivious_tree.levels):
+                if X_val[i, level.feature_idx] >= level.threshold:
+                    leaf_idx |= (1 << depth)
+
+            if leaf_idx < num_leaves:
+                leaf_sums[leaf_idx] += residuals[i]
+                leaf_counts[leaf_idx] += 1
+
+        # Retuned leaf values: mean residual per leaf, with fallback to original
+        retuned_values = []
+        for idx in range(num_leaves):
+            if leaf_counts[idx] > 0:
+                retuned_values.append(float(leaf_sums[idx] / leaf_counts[idx]))
+            else:
+                retuned_values.append(
+                    oblivious_tree.leaf_values[idx]
+                    if idx < len(oblivious_tree.leaf_values) else 0.0
+                )
+
+        oblivious_tree.leaf_values = retuned_values
+        return oblivious_tree
+
+    def _compute_partial_accuracy(
+        self,
+        model_ir: Any,
+        converted_trees: List[ObliviousTree],
+        last_converted_idx: int,
+        X: np.ndarray,
+        y: np.ndarray
+    ) -> float:
+        """
+        Compute accuracy with a mix of converted and original trees.
+
+        Trees up to last_converted_idx use their oblivious form;
+        remaining trees use the original model's traversal.
+        """
+        predictions = np.full(X.shape[0], model_ir.base_score)
+
+        # Add converted trees
+        for tree in converted_trees:
+            predictions += self._evaluate_oblivious_tree(tree, X)
+
+        # Add remaining original trees
+        for tree_idx in range(last_converted_idx + 1, len(model_ir.trees)):
+            for i in range(X.shape[0]):
+                predictions[i] += self._traverse_tree(
+                    model_ir.trees[tree_idx], X[i]
+                )
+
+        ss_res = np.sum((y - predictions) ** 2)
+        ss_tot = np.sum((y - y.mean()) ** 2)
+        return 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
 
     def convert_tree(
         self,

@@ -493,4 +493,3 @@ def prune_ensemble(
     pruner = create_homomorphic_pruner(threshold)
     return pruner.prune_plaintext(tree_outputs)
 
-
