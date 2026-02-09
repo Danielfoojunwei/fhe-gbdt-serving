@@ -336,13 +336,16 @@ class HomomorphicEnsemblePruner:
 
     def prune_plaintext(
         self,
-        tree_outputs: np.ndarray
+        tree_outputs: np.ndarray,
+        preserve_accuracy: bool = False
     ) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Prune ensemble in plaintext (for testing/validation).
 
         Args:
             tree_outputs: Shape (batch_size, num_trees)
+            preserve_accuracy: If True, verify pruning doesn't degrade
+                predictions significantly; fall back to unpruned if it does.
 
         Returns:
             Tuple of (pruned_outputs, metadata)
@@ -351,6 +354,24 @@ class HomomorphicEnsemblePruner:
         significance = self.significance_computer.compute_significance_plaintext(
             tree_outputs
         )
+
+        # Accuracy-preserving check: if significance scores are nearly uniform,
+        # all trees are equally important and pruning any is arbitrary/harmful.
+        sig_std = np.std(significance)
+        sig_mean = np.mean(significance)
+        if sig_mean > 0 and sig_std / sig_mean < 0.3:
+            # Coefficient of variation < 0.3: too uniform to prune safely
+            unpruned = tree_outputs.sum(axis=1)
+            num_total = tree_outputs.shape[1]
+            return unpruned, {
+                "significance": significance,
+                "gates": np.ones(num_total),
+                "num_active_trees": num_total,
+                "num_total_trees": num_total,
+                "pruning_ratio": 0.0,
+                "active_tree_indices": list(range(num_total)),
+                "skipped_uniform_significance": True,
+            }
 
         # Compute gates
         gates = self.gate.compute_gates_plaintext(significance)
@@ -377,6 +398,18 @@ class HomomorphicEnsemblePruner:
 
         # Compute aggregated output
         aggregated = pruned.sum(axis=1)
+
+        # Accuracy-preserving self-check: compare pruned vs unpruned predictions.
+        # If pruning changes predictions too much, fall back to unpruned.
+        if preserve_accuracy and num_active < num_total:
+            unpruned = tree_outputs.sum(axis=1)
+            unpruned_energy = np.mean(unpruned ** 2)
+            if unpruned_energy > 1e-10:
+                relative_deviation = np.mean((aggregated - unpruned) ** 2) / unpruned_energy
+                if relative_deviation > 0.01:  # More than 1% relative MSE change
+                    aggregated = unpruned
+                    num_active = num_total
+                    gates = np.ones(num_total)
 
         metadata = {
             "significance": significance,

@@ -595,11 +595,50 @@ class PolynomialLeafGBDT:
         self.evaluator = FHEPolynomialEvaluator(config.max_degree if config else 3)
 
     def fit_polynomials(self, X: np.ndarray, y: np.ndarray):
-        """Fit polynomial leaves from training data."""
+        """
+        Fit polynomial leaves from training data.
+
+        Includes global validation: after fitting all per-leaf polynomials,
+        compares overall model MSE (with vs without polynomials) on training
+        data. If polynomials increase overall MSE, they are removed to
+        guarantee accuracy preservation.
+        """
         trainer = PolynomialLeafTrainer(self.config)
         self.polynomial_leaves = trainer.fit_leaf_polynomials(
             self.model_ir, X, y
         )
+
+        # Global validation: ensure polynomials don't hurt overall model
+        if self.polynomial_leaves:
+            poly_preds = self.predict(X)
+            poly_mse = float(np.mean((y - poly_preds) ** 2))
+
+            baseline_preds = self._predict_baseline(X)
+            baseline_mse = float(np.mean((y - baseline_preds) ** 2))
+
+            if poly_mse > baseline_mse:
+                logger.info(
+                    f"Global validation: polynomial corrections increase MSE "
+                    f"({poly_mse:.6f} > {baseline_mse:.6f}). "
+                    f"Removing {len(self.polynomial_leaves)} polynomials."
+                )
+                self.polynomial_leaves = {}
+
+    def _predict_baseline(self, X: np.ndarray) -> np.ndarray:
+        """Predict using only scalar leaf values (no polynomial corrections)."""
+        predictions = np.full(X.shape[0], self.model_ir.base_score)
+        for tree in self.model_ir.trees:
+            for i in range(X.shape[0]):
+                node = tree.nodes.get(tree.root_id)
+                while node is not None:
+                    if node.leaf_value is not None:
+                        predictions[i] += node.leaf_value
+                        break
+                    if X[i, node.feature_index] < node.threshold:
+                        node = tree.nodes.get(node.left_child_id)
+                    else:
+                        node = tree.nodes.get(node.right_child_id)
+        return predictions
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """

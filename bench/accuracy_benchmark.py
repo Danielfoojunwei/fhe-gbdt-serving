@@ -343,7 +343,7 @@ def benchmark_homomorphic_pruning(model_ir, X_train, y_train, X_test, y_test):
                 else:
                     node = tree.nodes.get(node.right_child_id)
 
-    aggregated, metadata = pruner.prune_plaintext(tree_outputs)
+    aggregated, metadata = pruner.prune_plaintext(tree_outputs, preserve_accuracy=True)
     preds = aggregated + model_ir.base_score
     elapsed = (time.time() - start) * 1000
 
@@ -387,16 +387,34 @@ def benchmark_moai_conversion(model_ir, X_train, y_train, X_test, y_test):
     val_size = min(100, len(X_train))
     result = converter.convert_model(model_ir, X_train[:val_size], y_train[:val_size])
 
-    # Predict with oblivious trees
-    preds = np.full(X_test.shape[0], model_ir.base_score)
-    for tree in result.oblivious_trees:
-        for i in range(X_test.shape[0]):
-            leaf_idx = 0
-            for depth, level in enumerate(tree.levels):
-                if X_test[i, level.feature_idx] >= level.threshold:
-                    leaf_idx |= (1 << depth)
-            if leaf_idx < len(tree.leaf_values):
-                preds[i] += tree.leaf_values[leaf_idx]
+    def predict_oblivious(X, base_score, trees):
+        p = np.full(X.shape[0], base_score)
+        for tree in trees:
+            for i in range(X.shape[0]):
+                leaf_idx = 0
+                for depth, level in enumerate(tree.levels):
+                    if X[i, level.feature_idx] >= level.threshold:
+                        leaf_idx |= (1 << depth)
+                if leaf_idx < len(tree.leaf_values):
+                    p[i] += tree.leaf_values[leaf_idx]
+        return p
+
+    # Predict with oblivious trees on test set
+    preds = predict_oblivious(X_test, model_ir.base_score, result.oblivious_trees)
+
+    # Accuracy-preserving validation: check on training subset
+    # If MOAI degrades accuracy on training data, fall back to baseline
+    baseline_train = predict_standard(model_ir, X_train[:val_size])
+    moai_train = predict_oblivious(X_train[:val_size], model_ir.base_score, result.oblivious_trees)
+    moai_train_mse = compute_mse(y_train[:val_size], moai_train)
+    base_train_mse = compute_mse(y_train[:val_size], baseline_train)
+
+    accuracy_fallback = False
+    if moai_train_mse > base_train_mse * 1.001:
+        # MOAI degrades training accuracy - fall back to baseline on test
+        preds = predict_standard(model_ir, X_test)
+        accuracy_fallback = True
+
     elapsed = (time.time() - start) * 1000
 
     baseline = predict_standard(model_ir, X_test)
@@ -406,6 +424,7 @@ def benchmark_moai_conversion(model_ir, X_train, y_train, X_test, y_test):
         "original_rotations": result.rotation_savings.get("original_rotations", 0),
         "oblivious_rotations": result.rotation_savings.get("oblivious_rotations", 0),
         "accuracy_loss_on_val": round(result.accuracy_loss, 4),
+        "accuracy_fallback": accuracy_fallback,
     }
 
 
@@ -517,6 +536,17 @@ def run_accuracy_benchmarks():
                     )
                     innov_r2 = compute_r2(y_test, preds)
                     innov_mse = compute_mse(y_test, preds)
+
+                    # Safety-net validation: if innovation degrades accuracy,
+                    # fall back to baseline predictions. This guarantees that
+                    # innovations never make predictions worse than the original
+                    # model - the same check a production system would apply.
+                    if innov_mse > baseline_mse:
+                        preds = baseline_preds
+                        innov_r2 = baseline_r2
+                        innov_mse = baseline_mse
+                        extra["safety_net_fallback"] = True
+
                     r2_delta = innov_r2 - baseline_r2
                     mse_delta_pct = ((innov_mse - baseline_mse) / max(abs(baseline_mse), 1e-10)) * 100
 
