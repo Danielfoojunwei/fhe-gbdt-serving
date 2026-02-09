@@ -387,7 +387,7 @@ class PolynomialLeafTrainer:
 
                 # Clamp predictions to prevent extrapolation blowup
                 target_std = max(np.std(y_train), 1e-6)
-                clamp_bound = 3 * target_std
+                clamp_bound = 2 * target_std
                 val_fitted = np.clip(val_fitted, -clamp_bound, clamp_bound)
 
                 # MSE with polynomial correction
@@ -396,8 +396,8 @@ class PolynomialLeafTrainer:
                 # The polynomial must REDUCE validation MSE compared to scalar-only
                 improvement = (baseline_val_mse - poly_val_mse) / baseline_val_mse
 
-                # Require at least 10% improvement on held-out data
-                if improvement > best_improvement and improvement > 0.10:
+                # Require at least 5% improvement on held-out data
+                if improvement > best_improvement and improvement > 0.05:
                     # Also compute R² for reporting
                     ss_res = np.sum((y_val - val_fitted) ** 2)
                     ss_tot = np.sum(y_val ** 2)
@@ -654,8 +654,8 @@ class PolynomialLeafGBDT:
 
                 # Polynomial correction (evaluate and clamp)
                 correction = poly_leaf.evaluate(X[i:i+1])[0]
-                # Clamp: correction should not exceed the leaf magnitude
-                max_correction = abs(base_value) + 0.1
+                # Clamp: correction bounded by half the leaf magnitude
+                max_correction = abs(base_value) * 0.5 + 0.05
                 correction = np.clip(correction, -max_correction, max_correction)
 
                 outputs[i] = base_value + correction

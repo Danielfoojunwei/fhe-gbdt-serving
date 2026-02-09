@@ -132,12 +132,12 @@ class LeafIndicatorComputer:
         squares the approximation error near 0, giving much better
         discrimination at decision boundaries.
         """
-        # First pass: base polynomial sign approximation
+        # Iterative composition: applying sign(sign(x)) converges to
+        # the true sign function. Each pass sharpens the transition
+        # because poly_sign maps values close to ±1 even closer to ±1.
         result = self._raw_poly_sign(x)
-
-        # Composition pass: sharpen the sign boundary
-        # sign(sign(x)) squares the error near 0
-        result = self._raw_poly_sign(2 * result - 1)
+        result = self._raw_poly_sign(result)  # 2nd pass: sharper
+        result = self._raw_poly_sign(result)  # 3rd pass: even sharper
 
         # Map from [-1, 1] to [0, 1]
         return (result + 1) / 2
@@ -189,7 +189,7 @@ class LeafIndicatorComputer:
 
         for d, (feat_idx, threshold) in enumerate(level_thresholds):
             delta = features[:, feat_idx] - threshold
-            # Normalize using threshold magnitude (deterministic, not batch-dependent)
+            # Normalize to [-1, 1] using threshold magnitude as scale
             scale = max(abs(threshold), 1.0)
             delta_norm = np.clip(delta / scale, -1, 1)
             signs[:, d] = self.polynomial_sign(delta_norm)

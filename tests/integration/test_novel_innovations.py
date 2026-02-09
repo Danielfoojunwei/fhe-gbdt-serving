@@ -157,14 +157,14 @@ class TestLeafCentricEncoding:
         x = np.array([0.1, 0.5, 0.9])
         signs = computer.polynomial_sign(x)
 
-        # With iterative sign sharpening, the function is steeper:
-        # sign(0.1) ≈ near 0 (small positive, close to steep boundary)
-        # sign(0.5) ≈ clearly positive (> 0.5)
+        # With iterative sign composition, the function is very steep:
+        # sign(0.1) > 0.5 (positive input, clearly mapped above 0.5)
+        # sign(0.5) ≈ close to 1.0 (well into positive territory)
         # sign(0.9) ≈ 1.0 (fully positive)
         assert signs.shape == (3,)
-        assert 0 <= signs[0] <= 0.5   # Small positive: near boundary
-        assert signs[1] >= 0.5        # Moderate positive: clearly > 0.5
-        assert signs[2] >= 0.9        # Large positive: essentially 1.0
+        assert signs[0] >= 0.5        # Small positive: mapped above 0.5
+        assert signs[1] >= 0.8        # Moderate positive: close to 1.0
+        assert signs[2] >= 0.95       # Large positive: essentially 1.0
         # Key property: monotonically increasing
         assert signs[0] < signs[1] < signs[2]
 

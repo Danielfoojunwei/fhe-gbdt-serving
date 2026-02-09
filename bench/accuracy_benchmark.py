@@ -324,7 +324,8 @@ def benchmark_homomorphic_pruning(model_ir, X_train, y_train, X_test, y_test):
     config = PruningConfig(
         significance_threshold=0.1,
         soft_pruning=True,
-        min_trees=max(1, len(model_ir.trees) // 4)
+        min_trees=max(1, len(model_ir.trees) * 3 // 4),
+        max_prune_fraction=0.3,
     )
     pruner = HomomorphicEnsemblePruner(config)
 
@@ -379,10 +380,12 @@ def benchmark_moai_conversion(model_ir, X_train, y_train, X_test, y_test):
     start = time.time()
     config = ConversionConfig(
         retune_leaves=True,
-        max_accuracy_loss=0.10,
+        max_accuracy_loss=0.05,
     )
     converter = RotationOptimalConverter(config)
-    result = converter.convert_model(model_ir, X_train[:100], y_train[:100])
+    # Use limited validation data to prevent overfitting during retuning
+    val_size = min(100, len(X_train))
+    result = converter.convert_model(model_ir, X_train[:val_size], y_train[:val_size])
 
     # Predict with oblivious trees
     preds = np.full(X_test.shape[0], model_ir.base_score)
@@ -517,9 +520,11 @@ def run_accuracy_benchmarks():
                     r2_delta = innov_r2 - baseline_r2
                     mse_delta_pct = ((innov_mse - baseline_mse) / max(abs(baseline_mse), 1e-10)) * 100
 
-                    # Accuracy preservation: how close is the innovation to baseline
+                    # Accuracy preservation: only penalize degradation (higher MSE)
+                    # If innovation has lower MSE than baseline, it's at least 100% preserved
                     if baseline_mse > 1e-10:
-                        preserved = max(0, (1 - abs(innov_mse - baseline_mse) / baseline_mse)) * 100
+                        degradation = max(0, innov_mse - baseline_mse) / baseline_mse
+                        preserved = max(0, (1 - degradation)) * 100
                     else:
                         preserved = 100.0 if innov_mse < 1e-10 else 0.0
 

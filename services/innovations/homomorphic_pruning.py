@@ -358,12 +358,25 @@ class HomomorphicEnsemblePruner:
         # Apply gates
         pruned = self.gate.apply_gates_plaintext(tree_outputs, gates)
 
-        # Compute aggregated output
-        aggregated = pruned.sum(axis=1)
-
-        # Collect metadata
+        # Magnitude-preserving rescaling:
+        # When we drop trees, the ensemble sum shrinks. Rescale the kept
+        # trees so the expected total magnitude is preserved.
+        # This is equivalent to dropout rescaling in neural networks.
         num_active = np.sum(gates > 0.5)
         num_total = len(gates)
+
+        if num_active > 0 and num_active < num_total:
+            # Compute scale factor based on significance mass kept
+            total_significance = significance.sum()
+            kept_significance = significance[gates > 0.5].sum()
+            if kept_significance > 0 and total_significance > 0:
+                scale_factor = total_significance / kept_significance
+            else:
+                scale_factor = num_total / num_active
+            pruned = pruned * scale_factor
+
+        # Compute aggregated output
+        aggregated = pruned.sum(axis=1)
 
         metadata = {
             "significance": significance,
