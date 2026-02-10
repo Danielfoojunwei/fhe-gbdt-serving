@@ -1,0 +1,80 @@
+[
+  {
+    "dataset": "breast_cancer",
+    "task": "classification",
+    "n_bits": 3,
+    "n_estimators": 50,
+    "max_depth": 5,
+    "plain_accuracy": 0.9824561403508771,
+    "fhe_sim_accuracy": 0.9824561403508771,
+    "fhe_real_accuracy": 1.0,
+    "fhe_compiled": true,
+    "compile_time_s": 0.71,
+    "fhe_time_per_sample_ms": 1523.4,
+    "fhe_samples_tested": 5
+  },
+  {
+    "dataset": "breast_cancer",
+    "task": "classification",
+    "n_bits": 5,
+    "n_estimators": 50,
+    "max_depth": 5,
+    "plain_accuracy": 0.9707602339181286,
+    "fhe_sim_accuracy": 0.9707602339181286,
+    "fhe_real_accuracy": 1.0,
+    "fhe_compiled": true,
+    "compile_time_s": 1.16,
+    "fhe_time_per_sample_ms": 3542.6,
+    "fhe_samples_tested": 5
+  },
+  {
+    "dataset": "breast_cancer",
+    "task": "classification",
+    "n_bits": 7,
+    "n_estimators": 50,
+    "max_depth": 5,
+    "plain_accuracy": 0.9766081871345029,
+    "fhe_sim_accuracy": 0.9766081871345029,
+    "fhe_real_accuracy": 1.0,
+    "fhe_compiled": true,
+    "compile_time_s": 1.25,
+    "fhe_time_per_sample_ms": 4100.9,
+    "fhe_samples_tested": 5
+  },
+  {
+    "dataset": "iris_binary",
+    "task": "classification",
+    "n_bits": 3,
+    "n_estimators": 20,
+    "max_depth": 3,
+    "plain_accuracy": 1.0,
+    "fhe_sim_accuracy": 1.0,
+    "fhe_real_accuracy": 1.0,
+    "fhe_compiled": true,
+    "fhe_time_per_sample_ms": 402.3
+  },
+  {
+    "dataset": "iris_binary",
+    "task": "classification",
+    "n_bits": 5,
+    "n_estimators": 20,
+    "max_depth": 3,
+    "plain_accuracy": 1.0,
+    "fhe_sim_accuracy": 1.0,
+    "fhe_real_accuracy": 1.0,
+    "fhe_compiled": true,
+    "fhe_time_per_sample_ms": 767.7
+  },
+  {
+    "dataset": "iris_binary",
+    "task": "classification",
+    "n_bits": 7,
+    "n_estimators": 20,
+    "max_depth": 3,
+    "plain_accuracy": 1.0,
+    "fhe_sim_accuracy": 1.0,
+    "fhe_real_accuracy": 1.0,
+    "fhe_compiled": true,
+    "fhe_time_per_sample_ms": 1002.3
+  }
+]
