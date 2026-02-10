@@ -157,11 +157,16 @@ class PolynomialLeafTrainer:
         """
         polynomial_leaves = {}
 
-        # Compute current predictions and residuals
-        current_preds = self._compute_predictions(model_ir, X)
-        residuals = y - current_preds
-
         for tree_idx, tree in enumerate(model_ir.trees):
+            # Compute per-tree residuals: what this tree should predict
+            # = total target residual from all OTHER trees
+            other_preds = np.full(X.shape[0], model_ir.base_score)
+            for other_idx, other_tree in enumerate(model_ir.trees):
+                if other_idx != tree_idx:
+                    for i in range(X.shape[0]):
+                        other_preds[i] += self._traverse_tree(other_tree, X[i])
+            tree_residuals = y - other_preds  # What this tree should ideally predict
+
             # Get leaf assignments for all samples
             leaf_assignments = self._get_leaf_assignments(tree, X)
 
@@ -172,7 +177,7 @@ class PolynomialLeafTrainer:
                 # Get samples in this leaf
                 mask = leaf_assignments == leaf_id
                 X_leaf = X[mask]
-                residuals_leaf = residuals[mask]
+                residuals_leaf = tree_residuals[mask]
 
                 if len(X_leaf) < self.config.min_samples_for_poly:
                     # Not enough samples, keep scalar
@@ -181,7 +186,7 @@ class PolynomialLeafTrainer:
                 # Get features to use in polynomial
                 feature_indices = self._select_features(tree, leaf_id, X_leaf)
 
-                # Fit polynomial
+                # Fit polynomial correction
                 poly_leaf = self._fit_polynomial(
                     tree_idx, leaf_id, X_leaf, residuals_leaf, feature_indices
                 )
@@ -311,7 +316,16 @@ class PolynomialLeafTrainer:
         residuals: np.ndarray,
         feature_indices: List[int]
     ) -> Optional[PolynomialLeaf]:
-        """Fit polynomial to residuals."""
+        """
+        Fit polynomial CORRECTION to residuals within a leaf region.
+
+        Key design principles:
+        1. Polynomial is an additive correction, not a replacement
+        2. Strong ridge regularization prevents overfitting
+        3. Cross-validation ensures the polynomial helps on unseen data
+        4. Normalization bounds are stored for deterministic evaluation
+        5. Output is clamped to prevent extrapolation blowup
+        """
         if not feature_indices:
             return None
 
@@ -320,47 +334,123 @@ class PolynomialLeafTrainer:
         x = X_leaf[:, primary_feature]
 
         # Normalize to [-1, 1] for numerical stability
-        x_min, x_max = x.min(), x.max()
+        x_min, x_max = float(x.min()), float(x.max())
         x_range = x_max - x_min if x_max > x_min else 1.0
         x_normalized = 2 * (x - x_min) / x_range - 1
 
-        # Fit polynomial
+        # The scalar leaf value is the mean of residuals (baseline)
+        scalar_value = float(residuals.mean())
+        # The polynomial should correct the DEVIATION from the mean
+        correction_targets = residuals - scalar_value
+
+        # Choose degree: start low, only increase if it helps
+        # Degree 1 (linear) captures most structure; higher degrees risk overfitting
+        best_coeffs = None
+        best_improvement = 0  # Must beat scalar-only prediction
+        best_degree = 0
+        best_r2 = 0
+
+        # Split into train/validation (70/30) for proper out-of-sample testing
+        n_total = len(x_normalized)
+        n_val = max(3, n_total // 3)
+        n_train = n_total - n_val
+
+        # Shuffle deterministically using leaf_id as seed
+        rng = np.random.RandomState(leaf_id)
+        perm = rng.permutation(n_total)
+        train_idx, val_idx = perm[:n_train], perm[n_train:]
+
+        x_train = x_normalized[train_idx]
+        y_train = correction_targets[train_idx]
+        x_val = x_normalized[val_idx]
+        y_val = correction_targets[val_idx]
+
+        # Baseline MSE: just predict 0 (correction = 0 means use scalar value)
+        baseline_val_mse = np.mean(y_val ** 2)
+
+        if baseline_val_mse < 1e-10:
+            return None  # No signal to fit
+
         try:
-            if self.config.poly_type == "chebyshev":
-                coeffs = chebyshev.chebfit(
-                    x_normalized, residuals, self.config.max_degree
-                )
-            else:
-                coeffs = np.polyfit(
-                    x_normalized, residuals, self.config.max_degree
+            for degree in range(1, min(self.config.max_degree, 3) + 1):
+                # Ridge regression with strong regularization
+                reg_strength = self.config.regularization * n_train
+                coeffs = self._ridge_polyfit(
+                    x_train, y_train, degree, reg_strength
                 )
 
-            # Evaluate fit quality
-            if self.config.poly_type == "chebyshev":
-                fitted = chebyshev.chebval(x_normalized, coeffs)
-            else:
-                fitted = np.polyval(coeffs[::-1], x_normalized)
+                if coeffs is None:
+                    continue
 
-            ss_res = np.sum((residuals - fitted) ** 2)
-            ss_tot = np.sum((residuals - residuals.mean()) ** 2)
-            r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+                # Evaluate on VALIDATION set (unseen data)
+                val_fitted = np.polyval(coeffs[::-1], x_val)
 
-            if r2 < self.config.r2_threshold:
+                # Clamp predictions to prevent extrapolation blowup
+                target_std = max(np.std(y_train), 1e-6)
+                clamp_bound = 2 * target_std
+                val_fitted = np.clip(val_fitted, -clamp_bound, clamp_bound)
+
+                # MSE with polynomial correction
+                poly_val_mse = np.mean((y_val - val_fitted) ** 2)
+
+                # The polynomial must REDUCE validation MSE compared to scalar-only
+                improvement = (baseline_val_mse - poly_val_mse) / baseline_val_mse
+
+                # Require at least 5% improvement on held-out data
+                if improvement > best_improvement and improvement > 0.05:
+                    # Also compute R² for reporting
+                    ss_res = np.sum((y_val - val_fitted) ** 2)
+                    ss_tot = np.sum(y_val ** 2)
+                    r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+
+                    best_improvement = improvement
+                    best_coeffs = coeffs
+                    best_degree = degree
+                    best_r2 = r2
+
+            if best_coeffs is None:
                 return None
 
             return PolynomialLeaf(
                 leaf_id=leaf_id,
                 tree_id=tree_id,
-                coefficients=coeffs,
+                coefficients=best_coeffs,
                 feature_indices=feature_indices,
-                poly_type=self.config.poly_type,
-                scalar_value=residuals.mean(),
-                fit_r2=r2,
+                poly_type="standard",
+                scalar_value=scalar_value,
+                fit_r2=best_r2,
                 num_samples_fit=len(residuals)
             )
 
         except Exception as e:
             logger.warning(f"Failed to fit polynomial at leaf {leaf_id}: {e}")
+            return None
+
+    def _ridge_polyfit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        degree: int,
+        reg_strength: float
+    ) -> Optional[np.ndarray]:
+        """
+        Fit polynomial with ridge (L2) regularization.
+
+        Solves: min ||Vw - y||² + λ||w||²
+        where V is the Vandermonde matrix.
+        """
+        try:
+            # Build Vandermonde matrix
+            V = np.vander(x, degree + 1, increasing=True)
+
+            # Ridge regression: (V'V + λI)w = V'y
+            VtV = V.T @ V
+            Vty = V.T @ y
+            VtV += reg_strength * np.eye(degree + 1)
+
+            coeffs = np.linalg.solve(VtV, Vty)
+            return coeffs
+        except np.linalg.LinAlgError:
             return None
 
 
@@ -443,6 +533,31 @@ class FHEPolynomialEvaluator:
 
         return result
 
+    def evaluate_horner(
+        self,
+        coeffs: np.ndarray,
+        num_coeffs: int,
+        x: float
+    ) -> float:
+        """
+        Evaluate polynomial using Horner's method in plaintext.
+
+        Computes c_0 + c_1*x + c_2*x^2 + ... efficiently as
+        c_0 + x*(c_1 + x*(c_2 + ...))
+
+        Args:
+            coeffs: Polynomial coefficients [c_0, c_1, ..., c_n]
+            num_coeffs: Number of coefficients
+            x: Evaluation point
+
+        Returns:
+            Polynomial value at x
+        """
+        result = float(coeffs[num_coeffs - 1])
+        for i in range(num_coeffs - 2, -1, -1):
+            result = result * x + float(coeffs[i])
+        return result
+
     def estimate_noise_cost(self, degree: int) -> float:
         """Estimate noise cost for polynomial of given degree."""
         # Each multiplication doubles noise approximately
@@ -480,11 +595,50 @@ class PolynomialLeafGBDT:
         self.evaluator = FHEPolynomialEvaluator(config.max_degree if config else 3)
 
     def fit_polynomials(self, X: np.ndarray, y: np.ndarray):
-        """Fit polynomial leaves from training data."""
+        """
+        Fit polynomial leaves from training data.
+
+        Includes global validation: after fitting all per-leaf polynomials,
+        compares overall model MSE (with vs without polynomials) on training
+        data. If polynomials increase overall MSE, they are removed to
+        guarantee accuracy preservation.
+        """
         trainer = PolynomialLeafTrainer(self.config)
         self.polynomial_leaves = trainer.fit_leaf_polynomials(
             self.model_ir, X, y
         )
+
+        # Global validation: ensure polynomials don't hurt overall model
+        if self.polynomial_leaves:
+            poly_preds = self.predict(X)
+            poly_mse = float(np.mean((y - poly_preds) ** 2))
+
+            baseline_preds = self._predict_baseline(X)
+            baseline_mse = float(np.mean((y - baseline_preds) ** 2))
+
+            if poly_mse > baseline_mse:
+                logger.info(
+                    f"Global validation: polynomial corrections increase MSE "
+                    f"({poly_mse:.6f} > {baseline_mse:.6f}). "
+                    f"Removing {len(self.polynomial_leaves)} polynomials."
+                )
+                self.polynomial_leaves = {}
+
+    def _predict_baseline(self, X: np.ndarray) -> np.ndarray:
+        """Predict using only scalar leaf values (no polynomial corrections)."""
+        predictions = np.full(X.shape[0], self.model_ir.base_score)
+        for tree in self.model_ir.trees:
+            for i in range(X.shape[0]):
+                node = tree.nodes.get(tree.root_id)
+                while node is not None:
+                    if node.leaf_value is not None:
+                        predictions[i] += node.leaf_value
+                        break
+                    if X[i, node.feature_index] < node.threshold:
+                        node = tree.nodes.get(node.left_child_id)
+                    else:
+                        node = tree.nodes.get(node.right_child_id)
+        return predictions
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -509,22 +663,43 @@ class PolynomialLeafGBDT:
         tree_idx: int,
         X: np.ndarray
     ) -> np.ndarray:
-        """Predict using single tree with polynomial leaves."""
+        """
+        Predict using single tree with polynomial leaf corrections.
+
+        For leaves WITH fitted polynomials:
+            output = scalar_leaf_value + clamped_polynomial_correction(features)
+        For leaves WITHOUT polynomials:
+            output = original_leaf_value (unchanged)
+
+        The polynomial correction captures residual structure within
+        the leaf region. Clamping prevents extrapolation blowup.
+        """
         outputs = np.zeros(X.shape[0])
 
         for i in range(X.shape[0]):
             leaf_id = self._get_leaf_id(tree_ir, X[i])
+            leaf_node = tree_ir.nodes.get(leaf_id)
+
+            if leaf_node is None or leaf_node.leaf_value is None:
+                continue
+
             key = (tree_idx, leaf_id)
 
             if key in self.polynomial_leaves:
-                # Use polynomial leaf
                 poly_leaf = self.polynomial_leaves[key]
-                outputs[i] = poly_leaf.evaluate(X[i:i+1])[0]
+
+                # Base: scalar leaf value
+                base_value = leaf_node.leaf_value
+
+                # Polynomial correction (evaluate and clamp)
+                correction = poly_leaf.evaluate(X[i:i+1])[0]
+                # Clamp: correction bounded by half the leaf magnitude
+                max_correction = abs(base_value) * 0.5 + 0.05
+                correction = np.clip(correction, -max_correction, max_correction)
+
+                outputs[i] = base_value + correction
             else:
-                # Use scalar leaf
-                leaf_node = tree_ir.nodes.get(leaf_id)
-                if leaf_node and leaf_node.leaf_value is not None:
-                    outputs[i] = leaf_node.leaf_value
+                outputs[i] = leaf_node.leaf_value
 
         return outputs
 

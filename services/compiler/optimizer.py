@@ -39,6 +39,11 @@ try:
     from services.innovations.gradient_noise import GradientAwareNoiseAllocator
     from services.innovations.bootstrap_aligned import BootstrapAwareTreeBuilder
     from services.innovations.moai_native import MOAINativeTreeBuilder
+    from services.innovations.model_aware_fhe import (
+        ModelAwareFHEEngine,
+        ModelStructureClassifier,
+        ModelStructureType,
+    )
     INNOVATIONS_AVAILABLE = True
 except ImportError:
     INNOVATIONS_AVAILABLE = False
@@ -501,8 +506,17 @@ def analyze_model_for_fhe(model: ModelIR) -> Dict[str, Any]:
 
     # Full analysis with innovations
     from services.innovations.unified_architecture import NovelFHEGBDTEngine
-    engine = NovelFHEGBDTEngine()
-    return engine.analyze_model(model)
+    base_analysis = engine.analyze_model(model) if (engine := NovelFHEGBDTEngine()) else {}
+
+    # Model-aware analysis (Innovation #8)
+    try:
+        model_aware_engine = ModelAwareFHEEngine()
+        model_aware_analysis = model_aware_engine.analyze(model)
+        base_analysis["model_aware"] = model_aware_analysis
+    except Exception as e:
+        logger.warning(f"Model-aware analysis failed: {e}")
+
+    return base_analysis
 
 
 class EnhancedMOAIOptimizer(MOAIOptimizer):

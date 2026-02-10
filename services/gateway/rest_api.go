@@ -1,12 +1,11 @@
 // Package gateway provides REST API endpoints for FHE-GBDT
 // Aligned with TenSafe's OpenAI-compatible API design
-package gateway
+package main
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ type RESTServer struct {
 	router      *mux.Router
 	logger      *zap.Logger
 	tracer      trace.Tracer
-	grpcGateway *Server // Underlying gRPC gateway
+	grpcGateway *gatewayServer // Underlying gRPC gateway
 	config      *RESTConfig
 }
 
@@ -53,7 +52,7 @@ func DefaultRESTConfig() *RESTConfig {
 }
 
 // NewRESTServer creates a new REST API server
-func NewRESTServer(grpcGateway *Server, config *RESTConfig, logger *zap.Logger) *RESTServer {
+func NewRESTServer(grpcGateway *gatewayServer, config *RESTConfig, logger *zap.Logger) *RESTServer {
 	if config == nil {
 		config = DefaultRESTConfig()
 	}

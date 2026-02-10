@@ -110,7 +110,7 @@ func (s *gatewayServer) Predict(ctx context.Context, req *inf_pb.PredictRequest)
 			Payload: req.Batch.Payload, // Echo back for loopback testing
 		},
 		Stats: &inf_pb.RuntimeStats{
-			RuntimeMs: float32(time.Since(start).Milliseconds()),
+			RuntimeMs: float64(time.Since(start).Milliseconds()),
 		},
 	}, nil
 }

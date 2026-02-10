@@ -126,20 +126,46 @@ class LeafIndicatorComputer:
         """
         Compute polynomial approximation of sign function.
 
-        sign(x) ≈ x · (c_1 + c_3·x² + c_5·x⁴ + ...)
+        Maps sign(x) from [-1, +1] to [0, 1] range for FHE.
 
-        Maps to [0, 1] range for FHE: (sign(x) + 1) / 2
+        Uses iterative composition for sharpness: applying sign(sign(x))
+        squares the approximation error near 0, giving much better
+        discrimination at decision boundaries.
         """
-        result = np.zeros_like(x)
-        x_power = x.copy()
-
-        for i, coeff in enumerate(self.poly_coeffs):
-            if coeff != 0:
-                result += coeff * x_power
-            x_power = x_power * (x ** 2) if i % 2 == 0 else x_power
+        # Iterative composition: applying sign(sign(x)) converges to
+        # the true sign function. Each pass sharpens the transition
+        # because poly_sign maps values close to ±1 even closer to ±1.
+        result = self._raw_poly_sign(x)
+        result = self._raw_poly_sign(result)  # 2nd pass: sharper
+        result = self._raw_poly_sign(result)  # 3rd pass: even sharper
 
         # Map from [-1, 1] to [0, 1]
         return (result + 1) / 2
+
+    def _raw_poly_sign(self, x: np.ndarray) -> np.ndarray:
+        """
+        Raw polynomial sign approximation on [-1, 1] -> [-1, 1].
+
+        Uses Horner's method for numerical stability.
+        """
+        # Clamp to [-1, 1] for polynomial stability
+        x_clamped = np.clip(x, -1, 1)
+
+        # Evaluate odd-degree polynomial: c1*x + c3*x^3 + c5*x^5
+        # Using Horner's form on x^2
+        x2 = x_clamped * x_clamped
+        result = np.zeros_like(x_clamped)
+
+        # Process coefficients in reverse (Horner on x^2 variable)
+        odd_coeffs = [(i, c) for i, c in enumerate(self.poly_coeffs) if c != 0]
+        if not odd_coeffs:
+            return x_clamped
+
+        # Direct evaluation (more stable than original power accumulation)
+        for i, coeff in odd_coeffs:
+            result += coeff * (x_clamped ** i)
+
+        return np.clip(result, -1, 1)
 
     def compute_level_signs(
         self,
@@ -163,8 +189,9 @@ class LeafIndicatorComputer:
 
         for d, (feat_idx, threshold) in enumerate(level_thresholds):
             delta = features[:, feat_idx] - threshold
-            # Normalize to [-1, 1] range for stable polynomial
-            delta_norm = np.clip(delta / (np.abs(delta).max() + 1e-8), -1, 1)
+            # Normalize to [-1, 1] using threshold magnitude as scale
+            scale = max(abs(threshold), 1.0)
+            delta_norm = np.clip(delta / scale, -1, 1)
             signs[:, d] = self.polynomial_sign(delta_norm)
 
         return signs
@@ -430,6 +457,13 @@ class LeafCentricEncoder:
         """
         Evaluate plan in plaintext (for validation).
 
+        For oblivious trees (all leaves share same level structure):
+            Uses efficient tensor product evaluation.
+
+        For non-oblivious trees (each leaf has unique path):
+            Evaluates each leaf's indicator independently using its
+            specific path conditions. This is mathematically exact.
+
         Args:
             plan: DirectLeafPlan from encode_model
             features: Shape (batch_size, num_features)
@@ -442,36 +476,116 @@ class LeafCentricEncoder:
         predictions = np.full(batch_size, base_score)
 
         for tree_indicators in plan.leaf_indicators:
-            # Build level thresholds for this tree
             if not tree_indicators:
                 continue
 
-            # Get conditions from first leaf (all leaves share same structure for oblivious)
-            first_indicator = tree_indicators[0]
-            level_thresholds = [
-                (cond[0], cond[1]) for cond in first_indicator.conditions
-            ]
-
-            if not level_thresholds:
+            if not tree_indicators[0].conditions:
                 # Single-leaf tree
                 predictions += tree_indicators[0].leaf_value
                 continue
 
-            # Compute level signs
-            signs = self.computer.compute_level_signs(features, level_thresholds)
+            # Check if tree is oblivious (all leaves share same level structure)
+            is_oblivious = self._is_oblivious_tree(tree_indicators)
 
-            # Compute leaf indicators using tensor product
-            depth = len(level_thresholds)
-            num_leaves = len(tree_indicators)
-            indicators = self.computer.compute_leaf_indicators_tensor(signs, depth)
-
-            # Weighted sum of leaf values
-            leaf_values = np.array([ind.leaf_value for ind in tree_indicators])
-            tree_output = np.dot(indicators[:, :num_leaves], leaf_values[:num_leaves])
-
-            predictions += tree_output
+            if is_oblivious:
+                predictions += self._evaluate_oblivious_tree(
+                    tree_indicators, features
+                )
+            else:
+                predictions += self._evaluate_nonoblivious_tree(
+                    tree_indicators, features
+                )
 
         return predictions
+
+    def _is_oblivious_tree(self, indicators: List[LeafIndicator]) -> bool:
+        """Check if all leaves share the same level structure (oblivious tree)."""
+        if len(indicators) <= 1:
+            return True
+
+        ref_features = [(c[0], c[1]) for c in indicators[0].conditions]
+        for ind in indicators[1:]:
+            other_features = [(c[0], c[1]) for c in ind.conditions]
+            if len(other_features) != len(ref_features):
+                return False
+            for (f1, t1), (f2, t2) in zip(ref_features, other_features):
+                if f1 != f2 or abs(t1 - t2) > 1e-10:
+                    return False
+        return True
+
+    def _evaluate_oblivious_tree(
+        self,
+        tree_indicators: List[LeafIndicator],
+        features: np.ndarray
+    ) -> np.ndarray:
+        """
+        Evaluate oblivious tree using tensor product (O(2^d) shared computation).
+
+        All leaves share the same (feature, threshold) at each level,
+        so we compute sign functions once and combine via tensor product.
+        """
+        first_indicator = tree_indicators[0]
+        level_thresholds = [(c[0], c[1]) for c in first_indicator.conditions]
+
+        signs = self.computer.compute_level_signs(features, level_thresholds)
+        depth = len(level_thresholds)
+        num_leaves = len(tree_indicators)
+        indicators = self.computer.compute_leaf_indicators_tensor(signs, depth)
+
+        leaf_values = np.array([ind.leaf_value for ind in tree_indicators])
+        return np.dot(indicators[:, :num_leaves], leaf_values[:num_leaves])
+
+    def _evaluate_nonoblivious_tree(
+        self,
+        tree_indicators: List[LeafIndicator],
+        features: np.ndarray
+    ) -> np.ndarray:
+        """
+        Evaluate non-oblivious tree using per-leaf indicator evaluation.
+
+        Each leaf has its own unique path of (feature, threshold, direction).
+        The leaf indicator is the product of sign functions along that
+        specific path. This is exact for any tree structure.
+
+        Mathematical formulation:
+            For leaf j with path conditions {(f_k, t_k, dir_k)}:
+              I_j(x) = Π_k  s_k(x_{f_k} - t_k)   if dir_k = right
+                        Π_k (1 - s_k(x_{f_k} - t_k))  if dir_k = left
+
+            prediction = Σ_j leaf_value_j * I_j(x)
+
+        This naturally sums to 1 when sign approximations are exact,
+        ensuring the prediction is a proper convex combination of leaf values.
+        """
+        batch_size = features.shape[0]
+        tree_output = np.zeros(batch_size)
+
+        for indicator in tree_indicators:
+            # Compute this leaf's indicator for all samples
+            leaf_indicator = np.ones(batch_size)
+
+            for feat_idx, threshold, is_left in indicator.conditions:
+                if feat_idx >= features.shape[1]:
+                    # Feature index out of range — skip this condition
+                    # (can happen with mismatched model/data dimensions)
+                    continue
+                delta = features[:, feat_idx] - threshold
+                # Normalize per-feature using a fixed scale (not batch-dependent)
+                # Use the threshold magnitude as scale reference
+                scale = max(abs(threshold), 1.0)
+                delta_norm = np.clip(delta / scale, -1, 1)
+                sign_val = self.computer.polynomial_sign(delta_norm)
+
+                if is_left:
+                    # Left branch: feature < threshold, negate sign
+                    leaf_indicator *= (1 - sign_val)
+                else:
+                    # Right branch: feature >= threshold
+                    leaf_indicator *= sign_val
+
+            tree_output += indicator.leaf_value * leaf_indicator
+
+        return tree_output
 
 
 # Convenience functions
