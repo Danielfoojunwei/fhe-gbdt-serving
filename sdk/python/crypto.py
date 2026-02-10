@@ -10,6 +10,7 @@ high-fidelity simulation.
 """
 
 import os
+import secrets
 import struct
 import hashlib
 from typing import List, Tuple, Optional
@@ -64,7 +65,6 @@ class N2HEKeyManager:
         else:
             # High-fidelity simulation
             # Secret key: binary polynomial
-            import secrets
             self._secret_key = [secrets.randbelow(2) for _ in range(self.params.n)]
             
             # Eval keys: simulated RGSW ciphertexts
@@ -140,7 +140,6 @@ class N2HEKeyManager:
         ciphertexts = []
         for val in values:
             # a: uniform random polynomial
-            import secrets
             a = [secrets.randbelow(q) for _ in range(n)]
             
             # e: small error (Gaussian approximation)

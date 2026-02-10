@@ -7,6 +7,7 @@ Converts library-specific formats to unified TreeIR for MOAI execution.
 
 import json
 import logging
+from functools import lru_cache
 from typing import Dict, List, Optional
 from .ir import TreeIR, TreeNode, ModelIR
 
@@ -101,7 +102,11 @@ class XGBoostParser(BaseParser):
                 max_depth=max_depth
             ))
 
-        base_score = float(data.get('learner', {}).get('learner_model_param', {}).get('base_score', 0.5))
+        raw_base = data.get('learner', {}).get('learner_model_param', {}).get('base_score', 0.5)
+        # XGBoost >= 2.0 may store base_score as '[value]' array string
+        if isinstance(raw_base, str):
+            raw_base = raw_base.strip('[] ')
+        base_score = float(raw_base)
 
         logger.info(f"Parsed XGBoost model: {len(model_ir_trees)} trees, {max_feature_id + 1} features")
 
@@ -267,22 +272,41 @@ class CatBoostParser(BaseParser):
         )
 
 
+@lru_cache(maxsize=None)
 def get_parser(library_type: str) -> Optional[BaseParser]:
     """
     Get the appropriate parser for a library type.
 
+    Parser instances are cached since they are stateless.
+
     Args:
-        library_type: One of 'xgboost', 'lightgbm', 'catboost'
+        library_type: One of 'xgboost', 'lightgbm', 'catboost',
+                       'logistic_regression', 'random_forest',
+                       'decision_tree', 'glm'
 
     Returns:
         Parser instance or None if not supported
     """
+    # Lazy imports to avoid circular dependencies
+    from .sklearn_parser import (
+        ScikitLearnLogisticRegressionParser,
+        ScikitLearnRandomForestParser,
+        ScikitLearnDecisionTreeParser,
+    )
+    from .glm_parser import StatsmodelsGLMParser
+
+    key = library_type.lower()
     parsers = {
-        "xgboost": XGBoostParser(),
-        "lightgbm": LightGBMParser(),
-        "catboost": CatBoostParser()
+        "xgboost": XGBoostParser,
+        "lightgbm": LightGBMParser,
+        "catboost": CatBoostParser,
+        "logistic_regression": ScikitLearnLogisticRegressionParser,
+        "random_forest": ScikitLearnRandomForestParser,
+        "decision_tree": ScikitLearnDecisionTreeParser,
+        "glm": StatsmodelsGLMParser,
     }
-    return parsers.get(library_type.lower())
+    parser_cls = parsers.get(key)
+    return parser_cls() if parser_cls else None
 
 
 def parse_model(content: bytes, library_type: str) -> ModelIR:
