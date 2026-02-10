@@ -1,5 +1,5 @@
 # Build the Go gateway
-FROM golang:1.21-alpine
+FROM golang:1.24-alpine
 WORKDIR /app
 COPY . .
 RUN go build -o gateway ./services/gateway/
