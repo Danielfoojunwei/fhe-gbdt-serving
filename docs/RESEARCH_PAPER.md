@@ -8,7 +8,7 @@
 
 ## Abstract
 
-Fully Homomorphic Encryption (FHE) enables privacy-preserving machine learning inference but imposes severe computational overhead on Gradient Boosted Decision Tree (GBDT) ensembles, the dominant architecture for tabular data. We present a unified preprocessing framework comprising three contributions that reduce encrypted inference cost at different stages of the ML pipeline. **(1) Significance-based ensemble pruning** removes low-contribution trees post-training, achieving 2.2x TFHE speedup (3,149ms to 1,430ms) with 0% accuracy loss on 50-tree ensembles. **(2) FHE-aware training** modifies the split criterion to penalize thresholds in high-density feature regions, reducing polynomial sign approximation error by up to 22.4% and improving FHE accuracy from 0.7544 to 0.7953 without increasing polynomial degree. **(3) Model-aware FHE optimization** classifies model structure (linear, single tree, random forest, boosted ensemble) and dispatches to specialized evaluation paths, achieving up to 476x noise budget reduction for random forests via independent noise channels. All latency measurements use real TFHE encryption via Concrete ML (Zama); all accuracy measurements use actual polynomial sign approximation. We report honest results including failures: the linear evaluation path achieves only 36.8% accuracy on depth-1 stumps despite 117x depth reduction, the model classifier misidentifies boosted ensembles as random forests 25% of the time, and precision-adaptive sign approximation provides no improvement beyond depth 3. Our framework operates as a preprocessing stage compatible with any FHE backend.
+Fully Homomorphic Encryption (FHE) enables privacy-preserving machine learning inference but imposes severe computational overhead on Gradient Boosted Decision Tree (GBDT) ensembles, the dominant architecture for tabular data. We present a unified preprocessing framework comprising three contributions that reduce encrypted inference cost at different stages of the ML pipeline. **(1) Significance-based ensemble pruning** removes low-contribution trees post-training, achieving 2.2x TFHE speedup (3,149ms to 1,430ms) with 0% accuracy loss on 50-tree ensembles. **(2) FHE-aware training** modifies the split criterion to penalize thresholds in high-density feature regions, reducing polynomial sign approximation error by up to 22.4% and improving FHE accuracy from 0.7544 to 0.7953 without increasing polynomial degree. **(3) Model-aware FHE optimization** classifies model structure (linear, single tree, random forest, boosted ensemble) and dispatches to specialized evaluation paths, achieving up to 476x theoretical noise budget reduction for random forests via independent noise channels under arithmetic FHE schemes (BFV, CKKS, N2HE). All latency measurements use real TFHE encryption via Concrete ML (Zama); all accuracy measurements use actual polynomial sign approximation. Critically, our end-to-end TFHE validation (27 configurations, 3 datasets, real encryption) reveals that the RF noise advantage **does not manifest under TFHE**: both RF and GBDT achieve 100% FHE accuracy, with RF requiring 17--40% more programmable bootstrap operations and 10--40% higher latency. This scheme-dependence is a key finding. We report honest results including failures: the linear evaluation path achieves only 36.8% accuracy on depth-1 stumps despite 117x depth reduction, the model classifier misidentifies boosted ensembles as random forests 25% of the time, and precision-adaptive sign approximation provides no improvement beyond depth 3. Our framework operates as a preprocessing stage compatible with any FHE backend.
 
 ---
 
@@ -336,7 +336,9 @@ Link function polynomial approximation errors are small: sigmoid max_error = 7.7
 
 #### 6.3.3 Independent Noise Channels for Random Forests
 
-**Table 9.** Noise budget comparison: GBDT (sequential) vs. RF (independent) scheduling.
+**Theoretical analysis.** Table 9 shows the noise budget comparison under arithmetic FHE schemes (BFV, BGV, CKKS, N2HE) where polynomial sign approximation noise accumulates through computation.
+
+**Table 9.** Noise budget comparison: GBDT (sequential) vs. RF (independent) scheduling — arithmetic FHE model.
 
 | Configuration | GBDT Bits | GBDT Boots | RF Bits | RF Boots | **Reduction** |
 |--------------|----------:|-----------:|--------:|---------:|--------------:|
@@ -345,7 +347,51 @@ Link function polynomial approximation errors are small: sigmoid max_error = 7.7
 | 100T x 8D | 6,483 | 233 | 69 | 2 | **94x** |
 | 500T x 10D | 40,503 | 1,456 | 85 | 3 | **476x** |
 
-This is the strongest result of Contribution 3. For random forests, where trees are genuinely independent, noise budget requirements scale as O(D + log T) rather than O(D x T). At 500 trees x depth 10, this yields a 476x reduction in noise bits (40,503 to 85) and reduction from 1,456 bootstrapping operations to 3. The savings grow with ensemble size, making this particularly valuable for large production forests.
+For random forests, where trees are genuinely independent, noise budget requirements scale as O(D + log T) rather than O(D x T). At 500 trees x depth 10, this yields a 476x reduction in noise bits (40,503 to 85) and reduction from 1,456 bootstrapping operations to 3.
+
+**End-to-end TFHE validation.** To validate whether the theoretical noise advantage manifests under real encrypted inference, we conduct a head-to-head comparison of RF vs. XGBoost (GBDT) using Concrete ML's actual TFHE encryption (`fhe="execute"`). We train both `RandomForestClassifier` and `XGBClassifier` from Concrete ML at identical hyperparameters and measure accuracy degradation under encryption.
+
+**Table 9b.** RF vs. GBDT under real TFHE encryption — Breast Cancer dataset, 5 encrypted samples per config.
+
+| Config | RF Plain | RF FHE | RF Degrad% | XGB Plain | XGB FHE | XGB Degrad% |
+|--------|--------:|-------:|-----------:|----------:|--------:|------------:|
+| 10T/3b | 97.66% | 100.0% | 0.0% | 98.25% | 100.0% | 0.0% |
+| 25T/3b | 95.32% | 100.0% | 0.0% | 97.08% | 100.0% | 0.0% |
+| 50T/3b | 96.49% | 100.0% | 0.0% | 97.08% | 100.0% | 0.0% |
+| 10T/6b | 95.91% | 100.0% | 0.0% | 95.91% | 100.0% | 0.0% |
+| 25T/6b | 96.49% | 100.0% | 0.0% | 96.49% | 100.0% | 0.0% |
+| 50T/6b | 96.49% | 100.0% | 0.0% | 96.49% | 100.0% | 0.0% |
+
+**Both RF and GBDT achieve 100% FHE accuracy across all 27 tested configurations** (3 datasets x 3 tree counts x 3 bit widths). No accuracy degradation is observed for either model type. This holds even when relaxing the crypto parameter target to global p_error = 0.1.
+
+**Table 9c.** FHE circuit complexity: RF vs. GBDT — Breast Cancer, Concrete ML.
+
+| Config | RF PBS | XGB PBS | RF/XGB Ratio | RF Key (MB) | XGB Key (MB) |
+|--------|-------:|--------:|-------------:|------------:|-------------:|
+| 10T/3b | 270 | 230 | 1.17x | 157 | 157 |
+| 25T/3b | 675 | 575 | 1.17x | 157 | 157 |
+| 50T/3b | 1,350 | 1,150 | 1.17x | 157 | 157 |
+| 10T/6b | 1,180 | 910 | 1.30x | 800 | 800 |
+| 25T/6b | 3,175 | 2,275 | 1.40x | 800 | 800 |
+| 50T/6b | 6,350 | 4,550 | 1.40x | 800 | 800 |
+
+**Table 9d.** FHE latency: RF vs. GBDT — Breast Cancer, ms per sample.
+
+| Config | RF (ms) | XGB (ms) | RF/XGB Ratio |
+|--------|--------:|---------:|-------------:|
+| 10T/3b | 768 | 642 | 1.20x |
+| 50T/3b | 1,657 | 1,336 | 1.24x |
+| 10T/6b | 1,735 | 1,417 | 1.22x |
+| 50T/6b | 4,901 | 3,512 | 1.40x |
+
+**Critical finding: The theoretical noise advantage does not manifest under TFHE.** Concrete ML's TFHE implementation uses Programmable Bootstrap (PBS) operations as lookup tables that *refresh* noise at each operation. Unlike arithmetic FHE schemes (BFV/CKKS) where noise accumulates through polynomial evaluation, TFHE noise is bounded per-PBS and does not compound across trees. Consequently:
+
+1. **Both RF and GBDT achieve zero accuracy degradation** — Concrete ML auto-tunes crypto parameters to guarantee correctness for both model types
+2. **RF requires 17--40% MORE PBS operations** than GBDT because each independent tree needs its own PBS chain, while GBDT's sequential structure allows compiler optimizations
+3. **RF is 10--40% SLOWER** than GBDT under TFHE because more PBS operations = more latency
+4. **Bootstrap key sizes are identical** — the noise advantage doesn't translate to smaller key parameters under TFHE
+
+**Implication.** The O(D + log T) vs. O(T x D) noise scaling analysis is valid for **arithmetic FHE schemes** where noise accumulates through polynomial computation (BFV, BGV, CKKS, and our N2HE system). Under TFHE, where PBS operations reset noise, the analysis does not apply. The practical benefit of independent noise channels is **scheme-dependent**: substantial for arithmetic HE, absent for TFHE. This is a significant qualification on the generality of Contribution 3's strongest theoretical result.
 
 #### 6.3.4 Precision-Adaptive Sign Approximation
 
@@ -413,7 +459,7 @@ A practitioner can apply any subset of the three contributions. FHE-aware traini
 
 1. **Ensemble pruning** is the most practically impactful contribution: simple to implement, guaranteed to reduce latency proportionally, and empirically demonstrates zero accuracy loss at 80% pruning on all tested datasets.
 2. **FHE-aware training** demonstrates a genuine and monotonic improvement in polynomial sign approximation quality. The theoretical error bound (Theorem 1) provides a formal connection between margin density and FHE prediction error.
-3. **Independent noise channels for RF** provide the largest theoretical improvement (up to 476x noise budget reduction), though the practical impact depends on the FHE backend's ability to exploit independent noise channels.
+3. **Independent noise channels for RF** provide the largest theoretical improvement (up to 476x noise budget reduction) under arithmetic FHE schemes. However, our end-to-end TFHE validation reveals this advantage is **scheme-dependent**: under TFHE (Concrete ML), both RF and GBDT achieve identical accuracy with zero degradation, and RF actually requires 17--40% more PBS operations. The noise theory is valid for BFV/CKKS/N2HE but does not translate to TFHE's PBS-based execution model.
 
 ### 7.3 What Does Not Work
 
@@ -429,6 +475,8 @@ We report these negative results in the interest of honest scientific communicat
 
 5. **Encrypted majority vote** (Section 6.3.5): 1--7% accuracy loss from polynomial softargmax approximation. Acceptable for binary classification but potentially problematic for many-class settings.
 
+6. **RF noise channels under TFHE** (Section 6.3.3): Our end-to-end TFHE validation reveals that the 476x theoretical noise reduction does NOT manifest under TFHE encryption. Both RF and GBDT achieve 100% FHE accuracy in all 27 configurations tested. RF is actually 10--40% slower than GBDT under TFHE due to more PBS operations. The theoretical result is valid for arithmetic FHE schemes (BFV, BGV, CKKS) but not for TFHE's PBS-based model. This is the most significant negative result in the paper, as it qualifies the generality of the strongest theoretical claim.
+
 ### 7.4 Limitations
 
 1. **Small FHE sample size.** Real TFHE accuracy is measured on 5 samples per configuration due to high latency (400--4,000ms per sample). Larger evaluation would provide tighter confidence intervals.
@@ -436,7 +484,8 @@ We report these negative results in the interest of honest scientific communicat
 3. **Single FHE backend.** Latency results are specific to Concrete ML's TFHE implementation. Other backends (SEAL/BFV, OpenFHE/CKKS) may exhibit different tradeoffs.
 4. **Classification-only FHE latency.** Only classification tasks are measured under real TFHE encryption. Regression FHE latency is not evaluated.
 5. **Custom trainer vs. production.** The FHE-aware training contribution uses a simple greedy trainer. Integration into XGBoost or CatBoost is future work.
-6. **No end-to-end FHE measurement of Contributions 2--3.** FHE-aware training improvements are measured via sign error reduction, not end-to-end TFHE latency. Model-aware noise savings are computed analytically, not measured on a real FHE backend.
+6. **FHE scheme dependence.** The RF noise channel analysis (Contribution 3) is validated theoretically for arithmetic FHE but empirically refuted for TFHE. Our end-to-end Concrete ML benchmarks (27 configurations, real encryption) show no accuracy difference between RF and GBDT, with RF being 10--40% slower. The noise theory requires arithmetic HE where polynomial noise accumulates; TFHE's PBS model resets noise per operation, eliminating the predicted advantage. We lack an arithmetic FHE backend to empirically confirm the theoretical 476x improvement.
+7. **FHE-aware training end-to-end.** FHE-aware training improvements are measured via polynomial sign error reduction in plaintext, not end-to-end TFHE latency.
 
 ### 7.5 Broader Impact
 
@@ -452,9 +501,9 @@ We present a unified preprocessing framework for optimizing GBDT inference under
 
 2. **FHE-aware tree training** reduces polynomial sign approximation error by up to 22.4% through margin density regularization, improving FHE accuracy from 0.7544 to 0.7953 without increasing polynomial degree. This validates the theoretical connection between threshold placement and FHE prediction quality (Theorem 1).
 
-3. **Model-aware FHE optimization** achieves up to 476x noise budget reduction for random forests via independent noise channel scheduling, and identifies model-structure-specific evaluation strategies that avoid unnecessary computation.
+3. **Model-aware FHE optimization** achieves up to 476x theoretical noise budget reduction for random forests via independent noise channel scheduling under arithmetic FHE schemes. End-to-end TFHE validation (27 configurations with real Concrete ML encryption) reveals that this advantage is **scheme-dependent**: under TFHE, both RF and GBDT achieve identical accuracy (100% in all configs), with RF requiring 17--40% more programmable bootstrap operations. The noise theory is valid for BFV/CKKS/N2HE but does not transfer to TFHE.
 
-We report these results honestly: ensemble pruning works reliably and delivers immediate practical value; FHE-aware training demonstrates a genuine and monotonic effect but requires integration into production trainers; model-aware optimization has strong theoretical results (noise channels) but practical limitations (classifier accuracy, linear approximation quality). The three contributions compose naturally across the training, post-training, and compilation stages.
+We report these results honestly: ensemble pruning works reliably and delivers immediate practical value; FHE-aware training demonstrates a genuine and monotonic effect but requires integration into production trainers; model-aware optimization has a strong theoretical noise result for arithmetic FHE but an important negative result under TFHE that significantly qualifies the practical impact. The three contributions compose naturally across the training, post-training, and compilation stages.
 
 All latency measurements use real TFHE encryption. All code and benchmarks are publicly available.
 
@@ -581,6 +630,9 @@ python bench/fhe_aware_training_benchmark.py
 # Contribution 3: Model-aware optimization (~5 min)
 python bench/model_aware_benchmark.py
 
+# Contribution 3: RF vs GBDT real TFHE validation (~8 min)
+python bench/rf_vs_gbdt_real_tfhe_benchmark.py
+
 # Unit and integration tests (38 tests)
 python -m pytest tests/integration/test_novel_innovations.py -v
 ```
@@ -589,6 +641,7 @@ Raw data files:
 - `bench/reports/definitive_benchmark.json` -- TFHE latency measurements
 - `bench/reports/fhe_aware_training_benchmark.json` -- Training sweep results
 - `bench/reports/model_aware_benchmark.json` -- Model-aware optimization results
+- `bench/reports/rf_vs_gbdt_real_tfhe.json` -- RF vs GBDT end-to-end TFHE validation
 
 ---
 
@@ -603,6 +656,63 @@ Raw data files:
 | **C2: FHE-Aware** | Absolute trainer quality | **No** | ~80% vs. XGBoost ~97% |
 | **C3: Model-Aware** | Structure classifier | **Partial** | 75% accuracy (GBDT misclassified) |
 | **C3: Model-Aware** | Linear evaluation | **No** | 36.84% accuracy despite 117x depth reduction |
-| **C3: Model-Aware** | RF noise channels | **Yes** | Up to 476x reduction, grows with T |
+| **C3: Model-Aware** | RF noise channels (theory) | **Yes** | Up to 476x reduction for arithmetic FHE |
+| **C3: Model-Aware** | RF noise channels (TFHE) | **No** | 0% accuracy diff, RF 17-40% slower (27 configs) |
 | **C3: Model-Aware** | Precision-adaptive sign | **No** | No improvement at depth >= 5 |
 | **C3: Model-Aware** | Encrypted majority vote | **Partial** | 96.5% agreement (binary), 92.6% (ternary) |
+
+---
+
+## Appendix E: RF vs. GBDT End-to-End TFHE Validation
+
+### E.1 Full Results — All 27 Configurations
+
+**Breast Cancer** (569 samples, 30 features):
+
+| Config | RF Plain | RF SimFHE | RF RealFHE | RF ms | XGB Plain | XGB SimFHE | XGB RealFHE | XGB ms |
+|--------|--------:|----------:|-----------:|------:|----------:|-----------:|------------:|-------:|
+| 10T/3b | 97.66% | 97.66% | 100.0% | 768 | 98.25% | 98.25% | 100.0% | 642 |
+| 25T/3b | 95.32% | 95.32% | 100.0% | 1,062 | 97.08% | 97.08% | 100.0% | 938 |
+| 50T/3b | 96.49% | 96.49% | 100.0% | 1,657 | 97.08% | 97.08% | 100.0% | 1,336 |
+| 10T/4b | 97.08% | 97.08% | 100.0% | 1,255 | 97.08% | 97.08% | 100.0% | 1,079 |
+| 25T/4b | 97.08% | 97.08% | 100.0% | 2,194 | 96.49% | 96.49% | 100.0% | 1,686 |
+| 50T/4b | 97.08% | 97.08% | 100.0% | 3,631 | 96.49% | 96.49% | 100.0% | 2,534 |
+| 10T/6b | 95.91% | 95.91% | 100.0% | 1,735 | 95.91% | 95.91% | 100.0% | 1,417 |
+| 25T/6b | 96.49% | 96.49% | 100.0% | 2,882 | 96.49% | 96.49% | 100.0% | 2,235 |
+| 50T/6b | 96.49% | 96.49% | 100.0% | 4,901 | 96.49% | 96.49% | 100.0% | 3,512 |
+
+**Iris binary** (150 samples, 4 features): All 9 configurations achieve 100.0% for both RF and GBDT across plain, simulated, and real FHE.
+
+**Wine binary** (178 samples, 13 features): All 9 configurations achieve 100.0% real FHE accuracy for both RF and GBDT, with minor plaintext accuracy variation (98.15--100.0%).
+
+### E.2 FHE Circuit Complexity Analysis
+
+| Config | RF PBS | XGB PBS | RF/XGB | RF Complexity | XGB Complexity | Ratio |
+|--------|-------:|--------:|-------:|--------------:|---------------:|------:|
+| 10T/3b | 270 | 230 | 1.17x | 22.6B | 19.3B | 1.17x |
+| 25T/3b | 675 | 575 | 1.17x | 56.6B | 48.3B | 1.17x |
+| 50T/3b | 1,350 | 1,150 | 1.17x | 113.2B | 96.5B | 1.17x |
+| 10T/6b | 1,180 | 910 | 1.30x | 66.4B | 51.4B | 1.29x |
+| 25T/6b | 3,175 | 2,275 | 1.40x | 178.6B | 128.5B | 1.39x |
+| 50T/6b | 6,350 | 4,550 | 1.40x | 357.2B | 257.0B | 1.39x |
+
+### E.3 Interpretation: Why TFHE Doesn't Show RF's Noise Advantage
+
+In TFHE, each tree comparison is evaluated via a **Programmable Bootstrap (PBS)**, which is a lookup table operation that inherently refreshes the ciphertext noise. This means:
+
+1. **Noise does not accumulate across trees** in TFHE — it is reset at each PBS
+2. RF's independence provides no noise budget savings because each tree needs its own PBS chain regardless
+3. GBDT's sequential dependence is irrelevant to TFHE noise because each comparison is independently bootstrapped
+4. RF actually requires MORE PBS operations because its trees cannot share intermediate computations
+
+The O(D + log T) vs. O(T × D) noise scaling applies to **arithmetic FHE** (BFV, BGV, CKKS, N2HE) where:
+- Comparisons are evaluated as polynomial approximations
+- Each polynomial multiplication adds noise to the ciphertext
+- Noise accumulates through the computation graph
+- Bootstrapping is needed when noise exceeds a threshold
+
+Under this model, RF's independent trees allow **parallel noise budgets** (fresh noise per tree), while GBDT's sequential trees force **serial noise accumulation**. This distinction is meaningful for systems like our N2HE backend, SortingHat's BFV evaluation, or HBDT's CKKS approach, but not for Concrete ML's TFHE.
+
+### E.4 Relaxed Crypto Parameters (p_error > 0)
+
+Even with target global p_error = 0.1 (10% failure rate), both RF and GBDT still achieve 100% FHE accuracy on all test samples. This confirms Concrete ML's PBS operations are robust and the scheme provides ample margin beyond what the parameters guarantee.
