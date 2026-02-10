@@ -4,7 +4,11 @@ This document describes the 10 novel innovations implemented in `services/innova
 
 **Total implementation**: 5,807 LOC Python across 10 modules
 **Test coverage**: 38 integration tests (all passing)
-**Benchmark coverage**: 126 accuracy benchmarks (7 innovations x 6 models x 3 datasets)
+**Benchmark coverage**: 112 real-model benchmarks + 126 synthetic benchmarks
+
+> **Important**: This document includes results from both synthetic trees (v2.0) and
+> real trained XGBoost/LightGBM models (v3.0). The real-model results are authoritative.
+> See `bench/reports/REAL_MODEL_RESULTS.md` for the canonical empirical report.
 
 ---
 
@@ -227,10 +231,22 @@ Converting non-oblivious trees to oblivious form involves:
 | Credit-Scoring | 100 | 5 | 3,100 | 7 | 99.8% | 7.45x |
 | Medical-Diagnosis | 50 | 8 | 12,750 | 6 | 100.0% | 5.81x |
 
+#### Real Trained Models (v3.0 — Canonical)
+
+| Dataset | Task | Preserved% | Rotation Savings | Speedup |
+|---|---|---|---|---|
+| Iris | Classification | **100.0%** | 98.0% | 71.6x |
+| Breast Cancer | Classification | **100.0%** | 98.7% | 117.3x |
+| Diabetes | Regression | **51.4%** | 97.7% | 299.1x |
+| California Housing | Regression | **4.1%** | 98.2% | 365.2x |
+
+**Critical finding**: MOAI works for classification but **fails catastrophically on regression** with real trained models.
+
 ### Known Limitations
 
+- **Regression failure**: Structural conversion loses per-node split information that is critical for continuous-valued predictions
 - Structural conversion from non-oblivious to oblivious loses fidelity
-- Mixed-structure ensembles (varied depths) convert worst (84.4%)
+- Mixed-structure ensembles (varied depths) convert worst (84.4% on synthetic, worse on real)
 - Deep-Ensemble (50 shallow trees) has many unique split patterns that don't map well to symmetric form
 - Retuning with too much data causes overfitting (capped at 100 samples)
 
@@ -338,43 +354,72 @@ The unified engine combines polynomial leaves and leaf-centric encoding. When po
 
 ## 10. Performance Summary
 
-### Overall Accuracy Preservation
+### Real Trained Models (Canonical — v3.0)
 
 ```
-Innovation                  Preserved%    Computation Benefit
-─────────────────────────── ──────────    ───────────────────
-Bootstrap-Aligned           100.0%        Optimal bootstrap placement
-Gradient-Aware Noise        100.0%        Adaptive precision (14.7 bits avg)
-Leaf-Centric Encoding       100.0%        Parallel leaf evaluation
-Polynomial Leaves           100.0%        +6.9% R² improvement
-Unified Engine              100.0%        All innovations combined
-Homomorphic Pruning          95.7%        22% computation savings
-MOAI Conversion              92.4%        99.4% rotation reduction (268.9x)
-─────────────────────────── ──────────
-OVERALL                      98.3%
+Innovation                  Classification  Regression  Overall   Computation Benefit
+─────────────────────────── ──────────────  ──────────  ────────  ───────────────────
+Bootstrap-Aligned           100.0%          100.0%      100.0%    Optimal bootstrap placement
+Gradient-Aware Noise        99.9%           99.8%       99.8%     Adaptive precision (13.6 bits)
+Homomorphic Pruning         100.0%          96.9%       98.6%     27% computation savings
+Polynomial Leaves           100.0%          100.0%      100.0%    (0% coverage, no effect)
+Unified Engine              100.0%          100.0%      100.0%    Correct integration
+Leaf-Centric Encoding       100.0%          37.6%       71.5%     Parallel leaf evaluation
+MOAI Conversion             100.0%          22.7%       63.9%     98.2% rotation reduction
+─────────────────────────── ──────────────  ──────────  ────────
+OVERALL                     100.0%          79.6%       90.6%
 ```
+
+### Comparison with Published SOTA
+
+| System | Year | Accuracy Loss | Latency | Model Scope |
+|---|---|---|---|---|
+| SortingHat (CCS 2022) | 2022 | **0%** (exact) | <1s / single DT | Single DT |
+| Concrete ML (Zama) | 2023+ | **<1-2%** | ~7-8s / 50 trees | XGBoost/RF |
+| HBDT (ESORICS 2024) | 2024 | "Slight" | ~6.5-8.5s / 64 trees | DT + RF |
+| BPDTE (2024) | 2024 | **0%** (exact) | <1ms amortized | Single DT (batched) |
+| **This work (classification)** | 2026 | **0-5%** | Plaintext only | XGBoost/LightGBM |
+| **This work (regression)** | 2026 | **22-64%** | Plaintext only | XGBoost/LightGBM |
+
+**Assessment**: Classification is competitive with SOTA. Regression is far below SOTA.
 
 ### Accuracy-Computation Tradeoff
 
-The two innovations that trade accuracy for computation (Pruning and MOAI) represent a fundamental tradeoff in FHE optimization:
-
-| Innovation | Accuracy Cost | Computation Benefit | When to Use |
+| Innovation | Classification Accuracy | Regression Accuracy | Computation Benefit |
 |---|---|---|---|
-| Pruning | -4.3% avg | 22% fewer trees evaluated | Large ensembles (>20 trees) |
-| MOAI | -7.6% avg | 99.4% fewer rotations (268.9x) | Non-oblivious models in FHE |
+| Pruning | 100% preserved | 96.9% preserved | 27% fewer trees evaluated |
+| MOAI | 100% preserved | 22.7% preserved | 98.2% fewer rotations |
+| Leaf-Centric | 100% preserved | 37.6% preserved | Parallel leaf evaluation |
+
+### What Actually Works
+
+| Innovation | Classification | Regression | Verdict |
+|---|---|---|---|
+| Pruning | Works | Works | **Genuinely useful** |
+| Gradient Noise | Works | Works | **Genuinely useful** |
+| Bootstrap Alignment | Works | Works | **Genuinely useful** |
+| Polynomial Leaves | No effect | No effect | **No practical value** |
+| Leaf-Centric | Works | Fails | **Classification only** |
+| MOAI | Works | Fails | **Classification only** |
+| Unified Engine | Works | Works | **Useful integration** |
 
 ### Methodology
 
-All results measured without any fallback mechanisms:
-- No benchmark safety-net (innovation output never swapped with baseline)
-- No training-data comparison fallback
-- No deviation-based fallback to standard evaluation
-- Genuine algorithmic checks retained (pruning CV skip, polynomial validation, magnitude rescaling)
+All results measured on real trained XGBoost/LightGBM models on sklearn datasets:
+- No fallback mechanisms (innovation output never swapped with baseline)
+- Conversion fidelity verified (ModelIR matches original model, MSE < 1e-9)
+- 70/30 train/test split, fixed seed=42 for reproducibility
 
 ### Reproducibility
 
 ```bash
-# Full accuracy benchmark (126 tests, ~2 minutes)
+# Install dependencies
+pip install scikit-learn xgboost lightgbm
+
+# Canonical real-model benchmark (112 evaluations, ~5 minutes)
+python bench/real_model_benchmark.py
+
+# Synthetic benchmark for comparison (126 evaluations, ~2 minutes)
 python bench/accuracy_benchmark.py
 
 # Integration tests (38 tests)
