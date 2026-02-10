@@ -10,7 +10,6 @@ package telemetry
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"sort"
 	"sync"
