@@ -1,15 +1,13 @@
 package main
 
 import (
-	"log"
 	"net/http"
 )
 
-func main() {
-	log.Println("Gateway service starting...")
+// registerHealthEndpoint adds a basic HTTP health check endpoint.
+func registerHealthEndpoint() {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }

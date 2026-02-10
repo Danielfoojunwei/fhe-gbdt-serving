@@ -1,0 +1,152 @@
+# FHE-GBDT Pod Disruption Budgets
+# Aligned with TenSafe's PDB configuration
+#
+# Ensures high availability during voluntary disruptions:
+# - Node maintenance
+# - Cluster upgrades
+# - Rolling deployments
+
+---
+# Gateway PDB - Critical for external traffic
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-gateway-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # At least 2 pods must always be available
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fhe-gbdt-gateway
+
+---
+# Runtime PDB - Critical for FHE inference
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-runtime-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: runtime
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # At least 50% of runtime pods must be available
+  # Using percentage for GPU workloads that scale dynamically
+  minAvailable: "50%"
+  selector:
+    matchLabels:
+      app: fhe-gbdt-runtime
+
+---
+# Registry PDB - Critical for model metadata
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-registry-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: registry
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # At least 1 registry pod must be available
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fhe-gbdt-registry
+
+---
+# Keystore PDB - Critical for key management
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-keystore-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: keystore
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # At least 1 keystore pod must be available
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fhe-gbdt-keystore
+
+---
+# Compiler PDB - Less critical, can tolerate more disruption
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-compiler-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: compiler
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # Allow up to 1 compiler pod to be unavailable
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: fhe-gbdt-compiler
+
+---
+# Training PDB - Can scale to zero, use maxUnavailable
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-training-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: training
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # Allow up to 50% of training pods to be unavailable
+  maxUnavailable: "50%"
+  selector:
+    matchLabels:
+      app: fhe-gbdt-training
+
+---
+# PostgreSQL PDB (if using StatefulSet)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-postgresql-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: postgresql
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # At least 1 PostgreSQL pod must be available
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fhe-gbdt-postgresql
+
+---
+# Redis PDB (if using StatefulSet for caching)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fhe-gbdt-redis-pdb
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: redis
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  # At least 1 Redis pod must be available
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: fhe-gbdt-redis

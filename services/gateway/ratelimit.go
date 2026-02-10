@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"github.com/fhe-gbdt-serving/services/gateway/auth"
 )
 
 const (
@@ -36,7 +37,7 @@ func RateLimitInterceptor() grpc.UnaryServerInterceptor {
 			return handler(ctx, req)
 		}
 		
-		tenantID := tenant.(*TenantContext).TenantID
+		tenantID := tenant.(*auth.TenantContext).TenantID
 		limiter := GetTenantLimiter(tenantID)
 		
 		if !limiter.Allow() {

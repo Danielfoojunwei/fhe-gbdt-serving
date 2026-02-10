@@ -1,0 +1,245 @@
+# FHE-GBDT KEDA ScaledObject Configuration
+# Aligned with TenSafe's KEDA implementation
+#
+# Prerequisites:
+# - KEDA installed: helm install keda kedacore/keda -n keda-system
+# - Prometheus adapter configured
+# - ServiceMonitor deployed
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fhe-gbdt-gateway-scaler
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  scaleTargetRef:
+    name: fhe-gbdt-gateway
+    kind: Deployment
+  pollingInterval: 15
+  cooldownPeriod: 60
+  minReplicaCount: 3
+  maxReplicaCount: 50
+  fallback:
+    failureThreshold: 3
+    replicas: 5
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 10
+              periodSeconds: 60
+            - type: Pods
+              value: 2
+              periodSeconds: 60
+          selectPolicy: Min
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 15
+            - type: Pods
+              value: 4
+              periodSeconds: 15
+          selectPolicy: Max
+  triggers:
+    # Scale based on request rate
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: gateway_requests_per_second
+        threshold: "100"
+        query: |
+          sum(rate(fhe_gbdt_gateway_requests_total{namespace="fhe-gbdt"}[1m]))
+
+    # Scale based on latency
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: gateway_latency_p95
+        threshold: "200"
+        query: |
+          histogram_quantile(0.95,
+            sum(rate(fhe_gbdt_gateway_request_duration_seconds_bucket{namespace="fhe-gbdt"}[5m]))
+            by (le)
+          ) * 1000
+
+    # Scale based on queue depth
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: gateway_queue_depth
+        threshold: "50"
+        query: |
+          sum(fhe_gbdt_gateway_pending_requests{namespace="fhe-gbdt"})
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fhe-gbdt-runtime-scaler
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: runtime
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  scaleTargetRef:
+    name: fhe-gbdt-runtime
+    kind: Deployment
+  pollingInterval: 15
+  cooldownPeriod: 120  # Longer cooldown for GPU workloads
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  fallback:
+    failureThreshold: 3
+    replicas: 3
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 600  # 10min stabilization for expensive resources
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 120
+          selectPolicy: Min
+        scaleUp:
+          stabilizationWindowSeconds: 30
+          policies:
+            - type: Percent
+              value: 50
+              periodSeconds: 30
+            - type: Pods
+              value: 2
+              periodSeconds: 30
+          selectPolicy: Max
+  triggers:
+    # Scale based on FHE prediction queue
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: runtime_queue_depth
+        threshold: "10"
+        query: |
+          sum(fhe_gbdt_runtime_queue_depth{namespace="fhe-gbdt"})
+
+    # Scale based on inference latency p95
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: runtime_latency_p95
+        threshold: "100"
+        query: |
+          histogram_quantile(0.95,
+            sum(rate(fhe_gbdt_runtime_predict_duration_seconds_bucket{namespace="fhe-gbdt"}[5m]))
+            by (le)
+          ) * 1000
+
+    # Scale based on GPU utilization (if GPU enabled)
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: runtime_gpu_utilization
+        threshold: "80"
+        query: |
+          avg(fhe_gbdt_runtime_gpu_utilization_percent{namespace="fhe-gbdt"})
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fhe-gbdt-compiler-scaler
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: compiler
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  scaleTargetRef:
+    name: fhe-gbdt-compiler
+    kind: Deployment
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  fallback:
+    failureThreshold: 3
+    replicas: 2
+  triggers:
+    # Scale based on compilation queue
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: compiler_queue_depth
+        threshold: "5"
+        query: |
+          sum(fhe_gbdt_compiler_pending_jobs{namespace="fhe-gbdt"})
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: fhe-gbdt-training-scaler
+  namespace: fhe-gbdt
+  labels:
+    app.kubernetes.io/name: fhe-gbdt
+    app.kubernetes.io/component: training
+    app.kubernetes.io/part-of: fhe-gbdt-serving
+spec:
+  scaleTargetRef:
+    name: fhe-gbdt-training
+    kind: Deployment
+  pollingInterval: 30
+  cooldownPeriod: 600  # Long cooldown for training workloads
+  minReplicaCount: 0   # Scale to zero when no training jobs
+  maxReplicaCount: 10
+  fallback:
+    failureThreshold: 3
+    replicas: 1
+  triggers:
+    # Scale based on training job queue
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        metricName: training_queue_depth
+        threshold: "1"
+        activationThreshold: "0"  # Scale from zero
+        query: |
+          sum(fhe_gbdt_training_pending_jobs{namespace="fhe-gbdt"})
+
+---
+# TriggerAuthentication for secure Prometheus access
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: prometheus-auth
+  namespace: fhe-gbdt
+spec:
+  secretTargetRef:
+    - parameter: bearerToken
+      name: prometheus-token
+      key: token
+
+---
+# ClusterTriggerAuthentication for cross-namespace scaling
+apiVersion: keda.sh/v1alpha1
+kind: ClusterTriggerAuthentication
+metadata:
+  name: fhe-gbdt-prometheus-auth
+spec:
+  secretTargetRef:
+    - parameter: bearerToken
+      name: prometheus-token
+      key: token
+      namespace: fhe-gbdt

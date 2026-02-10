@@ -1,0 +1,362 @@
+# FHE-GBDT Istio Service Mesh Configuration
+# Aligned with TenSafe's Istio implementation
+#
+# Prerequisites:
+# - Istio installed: istioctl install --set profile=production
+# - Namespace labeled: kubectl label namespace fhe-gbdt istio-injection=enabled
+
+---
+# Gateway for external traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: fhe-gbdt-gateway
+  namespace: fhe-gbdt
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: MUTUAL
+        credentialName: fhe-gbdt-tls-credential
+        minProtocolVersion: TLSV1_3
+        cipherSuites:
+          - TLS_AES_256_GCM_SHA384
+          - TLS_CHACHA20_POLY1305_SHA256
+      hosts:
+        - "api.fhe-gbdt.example.com"
+        - "*.fhe-gbdt.example.com"
+    - port:
+        number: 8443
+        name: grpc
+        protocol: GRPC
+      tls:
+        mode: MUTUAL
+        credentialName: fhe-gbdt-tls-credential
+        minProtocolVersion: TLSV1_3
+      hosts:
+        - "grpc.fhe-gbdt.example.com"
+
+---
+# VirtualService for routing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fhe-gbdt-routes
+  namespace: fhe-gbdt
+spec:
+  hosts:
+    - "api.fhe-gbdt.example.com"
+    - "grpc.fhe-gbdt.example.com"
+  gateways:
+    - fhe-gbdt-gateway
+  http:
+    # Health checks (no auth required)
+    - match:
+        - uri:
+            prefix: /health
+        - uri:
+            prefix: /ready
+      route:
+        - destination:
+            host: fhe-gbdt-gateway.fhe-gbdt.svc.cluster.local
+            port:
+              number: 8080
+
+    # API v1 routes
+    - match:
+        - uri:
+            prefix: /v1/
+      route:
+        - destination:
+            host: fhe-gbdt-gateway.fhe-gbdt.svc.cluster.local
+            port:
+              number: 8080
+      timeout: 120s
+      retries:
+        attempts: 3
+        perTryTimeout: 30s
+        retryOn: connect-failure,refused-stream,unavailable,cancelled,resource-exhausted
+
+    # gRPC routes
+    - match:
+        - headers:
+            content-type:
+              prefix: application/grpc
+      route:
+        - destination:
+            host: fhe-gbdt-gateway.fhe-gbdt.svc.cluster.local
+            port:
+              number: 8080
+      timeout: 120s
+
+---
+# DestinationRule for traffic policies
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: fhe-gbdt-gateway-destination
+  namespace: fhe-gbdt
+spec:
+  host: fhe-gbdt-gateway.fhe-gbdt.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 10s
+      http:
+        h2UpgradePolicy: UPGRADE
+        http1MaxPendingRequests: 1000
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+    loadBalancer:
+      simple: LEAST_REQUEST
+      localityLbSetting:
+        enabled: true
+        failover:
+          - from: us-west-1
+            to: us-east-1
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 50
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# DestinationRule for runtime service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: fhe-gbdt-runtime-destination
+  namespace: fhe-gbdt
+spec:
+  host: fhe-gbdt-runtime.fhe-gbdt.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 500
+        connectTimeout: 30s
+      http:
+        h2UpgradePolicy: UPGRADE
+        http1MaxPendingRequests: 500
+        http2MaxRequests: 500
+        maxRequestsPerConnection: 50
+    loadBalancer:
+      simple: LEAST_REQUEST
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 30
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# PeerAuthentication for mTLS
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: fhe-gbdt-mtls
+  namespace: fhe-gbdt
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# AuthorizationPolicy for service-to-service access
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: fhe-gbdt-internal-policy
+  namespace: fhe-gbdt
+spec:
+  action: ALLOW
+  rules:
+    # Gateway can access all internal services
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/fhe-gbdt/sa/fhe-gbdt-gateway"
+      to:
+        - operation:
+            methods: ["*"]
+
+    # Runtime can access keystore and registry
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/fhe-gbdt/sa/fhe-gbdt-runtime"
+      to:
+        - operation:
+            hosts:
+              - "fhe-gbdt-keystore.fhe-gbdt.svc.cluster.local"
+              - "fhe-gbdt-registry.fhe-gbdt.svc.cluster.local"
+
+    # Compiler can access registry
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/fhe-gbdt/sa/fhe-gbdt-compiler"
+      to:
+        - operation:
+            hosts:
+              - "fhe-gbdt-registry.fhe-gbdt.svc.cluster.local"
+
+    # Training can access registry and keystore
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/fhe-gbdt/sa/fhe-gbdt-training"
+      to:
+        - operation:
+            hosts:
+              - "fhe-gbdt-registry.fhe-gbdt.svc.cluster.local"
+              - "fhe-gbdt-keystore.fhe-gbdt.svc.cluster.local"
+
+    # Prometheus can scrape metrics
+    - from:
+        - source:
+            namespaces:
+              - "monitoring"
+      to:
+        - operation:
+            ports: ["9090"]
+            methods: ["GET"]
+
+---
+# AuthorizationPolicy for external access
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: fhe-gbdt-external-policy
+  namespace: fhe-gbdt
+spec:
+  selector:
+    matchLabels:
+      app: fhe-gbdt-gateway
+  action: ALLOW
+  rules:
+    # Allow external access to gateway only
+    - from:
+        - source:
+            namespaces:
+              - "istio-system"
+      to:
+        - operation:
+            ports: ["8080"]
+
+---
+# RequestAuthentication for JWT validation (optional)
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: fhe-gbdt-jwt-auth
+  namespace: fhe-gbdt
+spec:
+  selector:
+    matchLabels:
+      app: fhe-gbdt-gateway
+  jwtRules:
+    - issuer: "https://auth.fhe-gbdt.example.com"
+      jwksUri: "https://auth.fhe-gbdt.example.com/.well-known/jwks.json"
+      audiences:
+        - "fhe-gbdt-api"
+      forwardOriginalToken: true
+      fromHeaders:
+        - name: Authorization
+          prefix: "Bearer "
+
+---
+# Sidecar configuration for resource optimization
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: fhe-gbdt-sidecar
+  namespace: fhe-gbdt
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/part-of: fhe-gbdt-serving
+  egress:
+    - hosts:
+        - "./*"                                    # Same namespace
+        - "istio-system/*"                         # Istio services
+        - "monitoring/*"                           # Prometheus, Grafana
+        - "vault/*"                                # HashiCorp Vault
+  outboundTrafficPolicy:
+    mode: REGISTRY_ONLY
+
+---
+# ServiceEntry for external Vault access
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: vault-external
+  namespace: fhe-gbdt
+spec:
+  hosts:
+    - vault.vault.svc.cluster.local
+  ports:
+    - number: 8200
+      name: https
+      protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+
+---
+# EnvoyFilter for rate limiting
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: fhe-gbdt-ratelimit
+  namespace: fhe-gbdt
+spec:
+  workloadSelector:
+    labels:
+      app: fhe-gbdt-gateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            value:
+              stat_prefix: http_local_rate_limiter
+              token_bucket:
+                max_tokens: 1000
+                tokens_per_fill: 100
+                fill_interval: 1s
+              filter_enabled:
+                runtime_key: local_rate_limit_enabled
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+              filter_enforced:
+                runtime_key: local_rate_limit_enforced
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+              response_headers_to_add:
+                - append: false
+                  header:
+                    key: x-local-rate-limit
+                    value: "true"

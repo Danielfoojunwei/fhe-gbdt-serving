@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"context"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"

@@ -1,0 +1,400 @@
+[
+  {
+    "experiment": "latency_scaling",
+    "dataset": "breast_cancer",
+    "depth": 4,
+    "n_bits": 5,
+    "results": [
+      {
+        "n_trees": 5,
+        "plain_accuracy": 0.9766,
+        "fhe_accuracy": 1.0,
+        "fhe_ms_per_sample": 1196.7,
+        "fhe_samples": 5
+      },
+      {
+        "n_trees": 10,
+        "plain_accuracy": 0.9766,
+        "fhe_accuracy": 1.0,
+        "fhe_ms_per_sample": 1385.1,
+        "fhe_samples": 5
+      },
+      {
+        "n_trees": 20,
+        "plain_accuracy": 0.9708,
+        "fhe_accuracy": 1.0,
+        "fhe_ms_per_sample": 1896.7,
+        "fhe_samples": 5
+      },
+      {
+        "n_trees": 30,
+        "plain_accuracy": 0.9649,
+        "fhe_accuracy": 1.0,
+        "fhe_ms_per_sample": 2282.8,
+        "fhe_samples": 5
+      },
+      {
+        "n_trees": 50,
+        "plain_accuracy": 0.9708,
+        "fhe_accuracy": 1.0,
+        "fhe_ms_per_sample": 3215.6,
+        "fhe_samples": 5
+      }
+    ]
+  },
+  {
+    "experiment": "pruning_accuracy",
+    "results": [
+      {
+        "dataset": "Breast Cancer",
+        "task": "classification",
+        "keep_fraction": 1.0,
+        "original_trees": 50,
+        "kept_trees": 50,
+        "baseline_metric": 0.9708,
+        "pruned_metric": 0.9708,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0
+      },
+      {
+        "dataset": "Breast Cancer",
+        "task": "classification",
+        "keep_fraction": 0.8,
+        "original_trees": 50,
+        "kept_trees": 40,
+        "baseline_metric": 0.9708,
+        "pruned_metric": 0.9708,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0141
+      },
+      {
+        "dataset": "Breast Cancer",
+        "task": "classification",
+        "keep_fraction": 0.6,
+        "original_trees": 50,
+        "kept_trees": 30,
+        "baseline_metric": 0.9708,
+        "pruned_metric": 0.9708,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.048
+      },
+      {
+        "dataset": "Breast Cancer",
+        "task": "classification",
+        "keep_fraction": 0.5,
+        "original_trees": 50,
+        "kept_trees": 25,
+        "baseline_metric": 0.9708,
+        "pruned_metric": 0.9766,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0749
+      },
+      {
+        "dataset": "Breast Cancer",
+        "task": "classification",
+        "keep_fraction": 0.4,
+        "original_trees": 50,
+        "kept_trees": 20,
+        "baseline_metric": 0.9708,
+        "pruned_metric": 0.9708,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.122
+      },
+      {
+        "dataset": "Iris (binary)",
+        "task": "classification",
+        "keep_fraction": 1.0,
+        "original_trees": 50,
+        "kept_trees": 50,
+        "baseline_metric": 1.0,
+        "pruned_metric": 1.0,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0
+      },
+      {
+        "dataset": "Iris (binary)",
+        "task": "classification",
+        "keep_fraction": 0.8,
+        "original_trees": 50,
+        "kept_trees": 40,
+        "baseline_metric": 1.0,
+        "pruned_metric": 1.0,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0
+      },
+      {
+        "dataset": "Iris (binary)",
+        "task": "classification",
+        "keep_fraction": 0.6,
+        "original_trees": 50,
+        "kept_trees": 30,
+        "baseline_metric": 1.0,
+        "pruned_metric": 1.0,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0
+      },
+      {
+        "dataset": "Iris (binary)",
+        "task": "classification",
+        "keep_fraction": 0.5,
+        "original_trees": 50,
+        "kept_trees": 25,
+        "baseline_metric": 1.0,
+        "pruned_metric": 1.0,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0
+      },
+      {
+        "dataset": "Iris (binary)",
+        "task": "classification",
+        "keep_fraction": 0.4,
+        "original_trees": 50,
+        "kept_trees": 20,
+        "baseline_metric": 1.0,
+        "pruned_metric": 1.0,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0003
+      },
+      {
+        "dataset": "Diabetes",
+        "task": "regression",
+        "keep_fraction": 1.0,
+        "original_trees": 50,
+        "kept_trees": 50,
+        "baseline_metric": 0.3816,
+        "pruned_metric": 0.3816,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0
+      },
+      {
+        "dataset": "Diabetes",
+        "task": "regression",
+        "keep_fraction": 0.8,
+        "original_trees": 50,
+        "kept_trees": 40,
+        "baseline_metric": 0.3816,
+        "pruned_metric": 0.3901,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0008
+      },
+      {
+        "dataset": "Diabetes",
+        "task": "regression",
+        "keep_fraction": 0.6,
+        "original_trees": 50,
+        "kept_trees": 30,
+        "baseline_metric": 0.3816,
+        "pruned_metric": 0.3936,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0029
+      },
+      {
+        "dataset": "Diabetes",
+        "task": "regression",
+        "keep_fraction": 0.5,
+        "original_trees": 50,
+        "kept_trees": 25,
+        "baseline_metric": 0.3816,
+        "pruned_metric": 0.4001,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0054
+      },
+      {
+        "dataset": "Diabetes",
+        "task": "regression",
+        "keep_fraction": 0.4,
+        "original_trees": 50,
+        "kept_trees": 20,
+        "baseline_metric": 0.3816,
+        "pruned_metric": 0.4056,
+        "preserved_pct": 100.0,
+        "scale_factor": 1.0096
+      }
+    ]
+  },
+  {
+    "experiment": "fhe_accuracy_vs_bits",
+    "results": [
+      {
+        "dataset": "Breast Cancer",
+        "n_bits": 3,
+        "n_trees": 20,
+        "depth": 4,
+        "plain_accuracy": 0.9708,
+        "fhe_sim_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 900.1,
+        "compiled": true
+      },
+      {
+        "dataset": "Breast Cancer",
+        "n_bits": 3,
+        "n_trees": 50,
+        "depth": 5,
+        "plain_accuracy": 0.9825,
+        "fhe_sim_accuracy": 0.9825,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 1437.4,
+        "compiled": true
+      },
+      {
+        "dataset": "Breast Cancer",
+        "n_bits": 5,
+        "n_trees": 20,
+        "depth": 4,
+        "plain_accuracy": 0.9708,
+        "fhe_sim_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 1858.1,
+        "compiled": true
+      },
+      {
+        "dataset": "Breast Cancer",
+        "n_bits": 5,
+        "n_trees": 50,
+        "depth": 5,
+        "plain_accuracy": 0.9708,
+        "fhe_sim_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 3182.9,
+        "compiled": true
+      },
+      {
+        "dataset": "Breast Cancer",
+        "n_bits": 7,
+        "n_trees": 20,
+        "depth": 4,
+        "plain_accuracy": 0.9766,
+        "fhe_sim_accuracy": 0.9766,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 2081.0,
+        "compiled": true
+      },
+      {
+        "dataset": "Breast Cancer",
+        "n_bits": 7,
+        "n_trees": 50,
+        "depth": 5,
+        "plain_accuracy": 0.9766,
+        "fhe_sim_accuracy": 0.9766,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 3973.9,
+        "compiled": true
+      },
+      {
+        "dataset": "Iris (binary)",
+        "n_bits": 3,
+        "n_trees": 20,
+        "depth": 4,
+        "plain_accuracy": 1.0,
+        "fhe_sim_accuracy": 1.0,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 405.1,
+        "compiled": true
+      },
+      {
+        "dataset": "Iris (binary)",
+        "n_bits": 3,
+        "n_trees": 50,
+        "depth": 5,
+        "plain_accuracy": 1.0,
+        "fhe_sim_accuracy": 1.0,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 451.5,
+        "compiled": true
+      },
+      {
+        "dataset": "Iris (binary)",
+        "n_bits": 5,
+        "n_trees": 20,
+        "depth": 4,
+        "plain_accuracy": 1.0,
+        "fhe_sim_accuracy": 1.0,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 727.4,
+        "compiled": true
+      },
+      {
+        "dataset": "Iris (binary)",
+        "n_bits": 5,
+        "n_trees": 50,
+        "depth": 5,
+        "plain_accuracy": 1.0,
+        "fhe_sim_accuracy": 1.0,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 912.8,
+        "compiled": true
+      },
+      {
+        "dataset": "Iris (binary)",
+        "n_bits": 7,
+        "n_trees": 20,
+        "depth": 4,
+        "plain_accuracy": 1.0,
+        "fhe_sim_accuracy": 1.0,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 895.1,
+        "compiled": true
+      },
+      {
+        "dataset": "Iris (binary)",
+        "n_bits": 7,
+        "n_trees": 50,
+        "depth": 5,
+        "plain_accuracy": 1.0,
+        "fhe_sim_accuracy": 1.0,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 1149.5,
+        "compiled": true
+      }
+    ]
+  },
+  {
+    "experiment": "end_to_end_pruning",
+    "dataset": "breast_cancer",
+    "depth": 5,
+    "n_bits": 5,
+    "results": [
+      {
+        "n_trees": 50,
+        "plain_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 3148.7,
+        "speedup_vs_50": 0.0,
+        "acc_drop_vs_50": 0.0
+      },
+      {
+        "n_trees": 40,
+        "plain_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 2862.9,
+        "speedup_vs_50": 0.091,
+        "acc_drop_vs_50": 0.0
+      },
+      {
+        "n_trees": 30,
+        "plain_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 2351.8,
+        "speedup_vs_50": 0.253,
+        "acc_drop_vs_50": 0.0
+      },
+      {
+        "n_trees": 20,
+        "plain_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 1907.4,
+        "speedup_vs_50": 0.394,
+        "acc_drop_vs_50": 0.0
+      },
+      {
+        "n_trees": 10,
+        "plain_accuracy": 0.9708,
+        "fhe_real_accuracy": 1.0,
+        "fhe_ms_per_sample": 1430.3,
+        "speedup_vs_50": 0.546,
+        "acc_drop_vs_50": 0.0
+      }
+    ]
+  }
+]
