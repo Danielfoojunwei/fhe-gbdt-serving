@@ -363,7 +363,7 @@
             ],
           "classes_count":0
         },
-      "model_guid":"a0c379d8-ccd2f23c-c2497229-254961db",
+      "model_guid":"1fc8ab4e-a1e76b9e-43080f41-8ceff216",
       "output_options":"{\"name\":\"experiment\",\"verbose\":0,\"test_error_log\":\"test_error.tsv\",\"json_log\":\"catboost_training.json\",\"result_model_file\":\"model\",\"roc_file\":\"\",\"eval_file_name\":\"\",\"use_best_model\":false,\"allow_writing_files\":true,\"prediction_type\":[\"RawFormulaVal\"],\"fstr_internal_file\":\"\",\"output_columns\":[\"SampleId\",\"RawFormulaVal\",\"Label\"],\"snapshot_interval\":600,\"time_left_log\":\"time_left.tsv\",\"fstr_type\":\"FeatureImportance\",\"profile_log\":\"catboost_profile.log\",\"train_dir\":\"catboost_info\",\"learn_error_log\":\"learn_error.tsv\",\"training_options_file\":\"\",\"snapshot_file\":\"experiment.cbsnapshot\",\"save_snapshot\":false,\"model_format\":[\"CatboostBinary\"],\"final_feature_calcer_computation_mode\":\"Default\",\"metric_period\":1,\"output_borders\":\"\",\"final_ctr_computation_mode\":\"Default\",\"best_model_min_trees\":1,\"fstr_regular_file\":\"\"}",
       "params":
         {
@@ -733,7 +733,7 @@
               "sparse_features_conflict_fraction":0
             }
         },
-      "train_finish_time":"2026-02-03T05:41:21Z",
+      "train_finish_time":"2026-02-10T15:11:57Z",
       "training":"{\"metrics\":{\"learn_best_error\":{\"Logloss\":0.039865011567940735},\"test_metrics_history\":[],\"learn_metrics_history\":[{\"Logloss\":0.30235115235820065},{\"Logloss\":0.17669890023453136},{\"Logloss\":0.11987600982748846},{\"Logloss\":0.1025775424401525},{\"Logloss\":0.08086602424791721},{\"Logloss\":0.06864031551169678},{\"Logloss\":0.057733129517573145},{\"Logloss\":0.051196736681489316},{\"Logloss\":0.04383378816952168},{\"Logloss\":0.039865011567940735}],\"test_best_error\":[]}}"
     },
   "oblivious_trees":
