@@ -35,3 +35,4 @@ package-lock.json
 
 # TypeScript build outputs
 sdk/typescript/dist/
+.hypothesis/
