@@ -1,0 +1,2540 @@
+[
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -4.200285,
+    "r2_delta": 2.182685,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.261011,
+    "mse_delta_pct": -29.5638,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 20,
+      "max_depth": 6,
+      "total_leaves": 344
+    },
+    "time_ms": 131.65
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -6.382971,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.790288,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.7,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.3782548090322359e-05
+    },
+    "time_ms": 3.93
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -6.738895,
+    "r2_delta": -0.355924,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.876596,
+    "mse_delta_pct": 4.8209,
+    "accuracy_preserved_pct": 95.18,
+    "extra_metrics": {
+      "num_active_trees": 15,
+      "pruning_ratio": 0.25,
+      "total_trees": 20,
+      "computation_saved_pct": 25.0
+    },
+    "time_ms": 3.02
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -6.382971,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.790288,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 225.04
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -5.711464,
+    "r2_delta": 0.671507,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.627455,
+    "mse_delta_pct": -9.0953,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.25,
+      "speedup_factor": 133.6,
+      "original_rotations": 668,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -6.7973
+    },
+    "time_ms": 97.14
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -6.382971,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.790288,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 20,
+      "total_trees": 20,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 52.3
+    },
+    "time_ms": 2.96
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "XGBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.382971,
+    "innovation_r2": -6.382971,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.790288,
+    "innovation_mse": 1.790288,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.25,
+      "estimated_latency_ms": 910.5
+    },
+    "time_ms": 208.14
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -4.147465,
+    "r2_delta": 1.896167,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.248203,
+    "mse_delta_pct": -26.9203,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 15,
+      "max_depth": 7,
+      "total_leaves": 512
+    },
+    "time_ms": 237.76
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -6.043632,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.708003,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.83,
+      "min_precision_bits": 13,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.176425657680475e-05
+    },
+    "time_ms": 3.24
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -6.043632,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.708003,
+    "mse_delta_pct": -0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 15,
+      "pruning_ratio": 0.0,
+      "total_trees": 15,
+      "computation_saved_pct": 0.0
+    },
+    "time_ms": 2.24
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -6.043632,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.708003,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 149.63
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -7.117796,
+    "r2_delta": -1.074164,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.968475,
+    "mse_delta_pct": 15.2501,
+    "accuracy_preserved_pct": 84.75,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.6,
+      "speedup_factor": 252.25,
+      "original_rotations": 1009,
+      "oblivious_rotations": 4,
+      "accuracy_loss_on_val": -6.9718
+    },
+    "time_ms": 58.98
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -6.043632,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.708003,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 15,
+      "total_trees": 15,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 60.3
+    },
+    "time_ms": 1.95
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "LightGBM-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -6.043632,
+    "innovation_r2": -6.043632,
+    "r2_delta": 0.0,
+    "baseline_mse": 1.708003,
+    "innovation_mse": 1.708003,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.6,
+      "estimated_latency_ms": 660.4
+    },
+    "time_ms": 153.93
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -5.941671,
+    "r2_delta": 2.134896,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 1.683278,
+    "mse_delta_pct": -23.521,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 25,
+      "max_depth": 6,
+      "total_leaves": 496
+    },
+    "time_ms": 14.39
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -8.076567,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 2.200967,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.07,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 2.3474578198184673e-05
+    },
+    "time_ms": 3.75
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -8.815547,
+    "r2_delta": -0.73898,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 2.380161,
+    "mse_delta_pct": 8.1416,
+    "accuracy_preserved_pct": 91.86,
+    "extra_metrics": {
+      "num_active_trees": 18,
+      "pruning_ratio": 0.28,
+      "total_trees": 25,
+      "computation_saved_pct": 28.0
+    },
+    "time_ms": 2.94
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -8.076567,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 2.200967,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 335.29
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -8.576602,
+    "r2_delta": -0.500035,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 2.32222,
+    "mse_delta_pct": 5.5091,
+    "accuracy_preserved_pct": 94.49,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.48,
+      "speedup_factor": 193.4,
+      "original_rotations": 967,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -9.7115
+    },
+    "time_ms": 143.6
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -8.076567,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 2.200967,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 25,
+      "total_trees": 25,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 52.3
+    },
+    "time_ms": 3.16
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "CatBoost-style",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.076567,
+    "innovation_r2": -7.830998,
+    "r2_delta": 0.24557,
+    "baseline_mse": 2.200967,
+    "innovation_mse": 2.141419,
+    "mse_delta_pct": -2.7055,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.48,
+      "estimated_latency_ms": 1160.5
+    },
+    "time_ms": 340.2
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -6.727864,
+    "r2_delta": 1.875,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 1.873921,
+    "mse_delta_pct": -19.5254,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 50,
+      "max_depth": 3,
+      "total_leaves": 200
+    },
+    "time_ms": 35.23
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -8.602864,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 2.328588,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.27,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 2.2824093901150094e-05
+    },
+    "time_ms": 4.1
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -8.777364,
+    "r2_delta": -0.174499,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 2.370902,
+    "mse_delta_pct": 1.8172,
+    "accuracy_preserved_pct": 98.18,
+    "extra_metrics": {
+      "num_active_trees": 37,
+      "pruning_ratio": 0.26,
+      "total_trees": 50,
+      "computation_saved_pct": 26.0
+    },
+    "time_ms": 3.31
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -8.602864,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 2.328588,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 619.5
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -11.505588,
+    "r2_delta": -2.902723,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 3.032466,
+    "mse_delta_pct": 30.2277,
+    "accuracy_preserved_pct": 69.77,
+    "extra_metrics": {
+      "rotation_savings_pct": 98.29,
+      "speedup_factor": 58.333333333333336,
+      "original_rotations": 350,
+      "oblivious_rotations": 6,
+      "accuracy_loss_on_val": -6.8678
+    },
+    "time_ms": 307.33
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -8.602864,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 2.328588,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 50,
+      "total_trees": 50,
+      "needs_bootstrap": false,
+      "estimated_noise_bits": 28.1
+    },
+    "time_ms": 3.7
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -8.602864,
+    "innovation_r2": -8.602864,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.328588,
+    "innovation_mse": 2.328588,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 98.29,
+      "estimated_latency_ms": 2410.6
+    },
+    "time_ms": 635.98
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -1.917548,
+    "r2_delta": 1.124032,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.707473,
+    "mse_delta_pct": -27.8117,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 8,
+      "max_depth": 8,
+      "total_leaves": 1024
+    },
+    "time_ms": 614.76
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -3.04158,
+    "r2_delta": 0.0,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.980038,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.97,
+      "min_precision_bits": 13,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.1008049027788652e-05
+    },
+    "time_ms": 2.39
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -3.04158,
+    "r2_delta": 0.0,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.980038,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 8,
+      "pruning_ratio": 0.0,
+      "total_trees": 8,
+      "computation_saved_pct": 0.0
+    },
+    "time_ms": 1.53
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -3.04158,
+    "r2_delta": 0.0,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.980038,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 88.58
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -3.117813,
+    "r2_delta": -0.076233,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.998524,
+    "mse_delta_pct": 1.8862,
+    "accuracy_preserved_pct": 98.11,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.85,
+      "speedup_factor": 680.0,
+      "original_rotations": 2040,
+      "oblivious_rotations": 3,
+      "accuracy_loss_on_val": -3.854
+    },
+    "time_ms": 50.86
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -3.04158,
+    "r2_delta": 0.0,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.980038,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 8,
+      "total_trees": 8,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 68.3
+    },
+    "time_ms": 1.64
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -3.04158,
+    "innovation_r2": -3.04158,
+    "r2_delta": 0.0,
+    "baseline_mse": 0.980038,
+    "innovation_mse": 0.980038,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.85,
+      "estimated_latency_ms": 310.3
+    },
+    "time_ms": 110.18
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -8.192742,
+    "r2_delta": 2.240892,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 2.229138,
+    "mse_delta_pct": -19.5991,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 30,
+      "max_depth": 7,
+      "total_leaves": 704
+    },
+    "time_ms": 148.37
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -10.433634,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 2.772529,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.7,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.573038353801933e-05
+    },
+    "time_ms": 4.38
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -10.239657,
+    "r2_delta": 0.193976,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 2.725492,
+    "mse_delta_pct": -1.6965,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 22,
+      "pruning_ratio": 0.2667,
+      "total_trees": 30,
+      "computation_saved_pct": 26.67
+    },
+    "time_ms": 3.53
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -9.849891,
+    "r2_delta": 0.583742,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 2.630978,
+    "mse_delta_pct": -5.1055,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 68,
+      "coverage_pct": 9.87,
+      "avg_degree": 1.62,
+      "avg_leaf_r2": 0.2915
+    },
+    "time_ms": 394.2
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -12.357359,
+    "r2_delta": -1.923726,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 3.239011,
+    "mse_delta_pct": 16.8251,
+    "accuracy_preserved_pct": 83.17,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.64,
+      "speedup_factor": 275.6,
+      "original_rotations": 1378,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -11.1092
+    },
+    "time_ms": 170.18
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -10.433634,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 2.772529,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 30,
+      "total_trees": 30,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 60.4
+    },
+    "time_ms": 3.48
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "classification_30f",
+    "baseline_r2": -10.433634,
+    "innovation_r2": -10.160673,
+    "r2_delta": 0.272961,
+    "baseline_mse": 2.772529,
+    "innovation_mse": 2.706339,
+    "mse_delta_pct": -2.3873,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.64,
+      "estimated_latency_ms": 1410.5
+    },
+    "time_ms": 380.76
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": -0.248344,
+    "r2_delta": 0.05022,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 9.252393,
+    "mse_delta_pct": -3.8674,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 20,
+      "max_depth": 6,
+      "total_leaves": 376
+    },
+    "time_ms": 143.47
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": -0.298564,
+    "r2_delta": 0.0,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 9.624612,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 15.2,
+      "min_precision_bits": 13,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 8.964105008068598e-06
+    },
+    "time_ms": 2.71
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": -0.426607,
+    "r2_delta": -0.128043,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 10.573631,
+    "mse_delta_pct": 9.8603,
+    "accuracy_preserved_pct": 90.14,
+    "extra_metrics": {
+      "num_active_trees": 15,
+      "pruning_ratio": 0.25,
+      "total_trees": 20,
+      "computation_saved_pct": 25.0
+    },
+    "time_ms": 2.77
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": -0.206068,
+    "r2_delta": 0.092496,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 8.939056,
+    "mse_delta_pct": -7.1229,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 70,
+      "coverage_pct": 19.13,
+      "avg_degree": 1.56,
+      "avg_leaf_r2": 0.283
+    },
+    "time_ms": 247.48
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": 0.240945,
+    "r2_delta": 0.539509,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 5.625912,
+    "mse_delta_pct": -41.5466,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.32,
+      "speedup_factor": 146.4,
+      "original_rotations": 732,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -1.386
+    },
+    "time_ms": 81.41
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": -0.298564,
+    "r2_delta": 0.0,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 9.624612,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 20,
+      "total_trees": 20,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 52.3
+    },
+    "time_ms": 2.37
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "XGBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.298564,
+    "innovation_r2": -0.225442,
+    "r2_delta": 0.073122,
+    "baseline_mse": 9.624612,
+    "innovation_mse": 9.082649,
+    "mse_delta_pct": -5.631,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.32,
+      "estimated_latency_ms": 910.5
+    },
+    "time_ms": 253.06
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.229889,
+    "r2_delta": 0.056534,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 9.115611,
+    "mse_delta_pct": -4.3946,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 15,
+      "max_depth": 7,
+      "total_leaves": 560
+    },
+    "time_ms": 258.44
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.286423,
+    "r2_delta": 0.0,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 9.534624,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 15.2,
+      "min_precision_bits": 14,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 7.113126410437602e-06
+    },
+    "time_ms": 2.57
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.306014,
+    "r2_delta": -0.019591,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 9.679826,
+    "mse_delta_pct": 1.5229,
+    "accuracy_preserved_pct": 98.48,
+    "extra_metrics": {
+      "num_active_trees": 11,
+      "pruning_ratio": 0.2667,
+      "total_trees": 15,
+      "computation_saved_pct": 26.67
+    },
+    "time_ms": 2.14
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.236162,
+    "r2_delta": 0.050261,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 9.162102,
+    "mse_delta_pct": -3.907,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 43,
+      "coverage_pct": 7.79,
+      "avg_degree": 1.49,
+      "avg_leaf_r2": 0.2587
+    },
+    "time_ms": 175.16
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.130836,
+    "r2_delta": 0.155587,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 8.381456,
+    "mse_delta_pct": -12.0945,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.64,
+      "speedup_factor": 276.25,
+      "original_rotations": 1105,
+      "oblivious_rotations": 4,
+      "accuracy_loss_on_val": -1.1719
+    },
+    "time_ms": 59.41
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.286423,
+    "r2_delta": 0.0,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 9.534624,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 15,
+      "total_trees": 15,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 60.3
+    },
+    "time_ms": 2.05
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "LightGBM-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.286423,
+    "innovation_r2": -0.250036,
+    "r2_delta": 0.036387,
+    "baseline_mse": 9.534624,
+    "innovation_mse": 9.264936,
+    "mse_delta_pct": -2.8285,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.64,
+      "estimated_latency_ms": 660.4
+    },
+    "time_ms": 178.83
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.277966,
+    "r2_delta": 0.086142,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 9.471944,
+    "mse_delta_pct": -6.3149,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 25,
+      "max_depth": 6,
+      "total_leaves": 464
+    },
+    "time_ms": 13.76
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.364108,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 10.110406,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.8,
+      "min_precision_bits": 13,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.1390404338458548e-05
+    },
+    "time_ms": 3.67
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.276128,
+    "r2_delta": 0.08798,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 9.45832,
+    "mse_delta_pct": -6.4497,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 18,
+      "pruning_ratio": 0.28,
+      "total_trees": 25,
+      "computation_saved_pct": 28.0
+    },
+    "time_ms": 2.9
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.364108,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 10.110406,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 318.12
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.038627,
+    "r2_delta": 0.32548,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 7.698031,
+    "mse_delta_pct": -23.8603,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.45,
+      "speedup_factor": 180.6,
+      "original_rotations": 903,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -1.2162
+    },
+    "time_ms": 123.97
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.364108,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 10.110406,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 25,
+      "total_trees": 25,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 52.3
+    },
+    "time_ms": 3.0
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "CatBoost-style",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.364108,
+    "innovation_r2": -0.331959,
+    "r2_delta": 0.032149,
+    "baseline_mse": 10.110406,
+    "innovation_mse": 9.872128,
+    "mse_delta_pct": -2.3568,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.45,
+      "estimated_latency_ms": 1160.5
+    },
+    "time_ms": 339.72
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": -0.133615,
+    "r2_delta": 0.021652,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 8.402055,
+    "mse_delta_pct": -1.8742,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 50,
+      "max_depth": 3,
+      "total_leaves": 200
+    },
+    "time_ms": 36.06
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": -0.155267,
+    "r2_delta": 0.0,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 8.562532,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 15.2,
+      "min_precision_bits": 13,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.0004998141868592e-05
+    },
+    "time_ms": 3.82
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": -0.170862,
+    "r2_delta": -0.015595,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 8.678115,
+    "mse_delta_pct": 1.3499,
+    "accuracy_preserved_pct": 98.65,
+    "extra_metrics": {
+      "num_active_trees": 37,
+      "pruning_ratio": 0.26,
+      "total_trees": 50,
+      "computation_saved_pct": 26.0
+    },
+    "time_ms": 3.31
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": -0.155267,
+    "r2_delta": 0.0,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 8.562532,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 637.06
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": 0.27219,
+    "r2_delta": 0.427457,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 5.394333,
+    "mse_delta_pct": -37.0007,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 98.29,
+      "speedup_factor": 58.333333333333336,
+      "original_rotations": 350,
+      "oblivious_rotations": 6,
+      "accuracy_loss_on_val": -1.1655
+    },
+    "time_ms": 315.65
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": -0.155267,
+    "r2_delta": 0.0,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 8.562532,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 50,
+      "total_trees": 50,
+      "needs_bootstrap": false,
+      "estimated_noise_bits": 28.1
+    },
+    "time_ms": 3.98
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.155267,
+    "innovation_r2": -0.155267,
+    "r2_delta": 0.0,
+    "baseline_mse": 8.562532,
+    "innovation_mse": 8.562532,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 98.29,
+      "estimated_latency_ms": 2410.6
+    },
+    "time_ms": 645.94
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.225874,
+    "r2_delta": 0.04193,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 9.085853,
+    "mse_delta_pct": -3.3073,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 8,
+      "max_depth": 8,
+      "total_leaves": 1024
+    },
+    "time_ms": 648.6
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.267804,
+    "r2_delta": 0.0,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 9.39663,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 15.4,
+      "min_precision_bits": 14,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 6.762636530044592e-06
+    },
+    "time_ms": 2.28
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.311494,
+    "r2_delta": -0.04369,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 9.720445,
+    "mse_delta_pct": 3.4461,
+    "accuracy_preserved_pct": 96.55,
+    "extra_metrics": {
+      "num_active_trees": 6,
+      "pruning_ratio": 0.25,
+      "total_trees": 8,
+      "computation_saved_pct": 25.0
+    },
+    "time_ms": 1.62
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.21203,
+    "r2_delta": 0.055774,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 8.983247,
+    "mse_delta_pct": -4.3993,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 41,
+      "coverage_pct": 4.02,
+      "avg_degree": 1.46,
+      "avg_leaf_r2": 0.4073
+    },
+    "time_ms": 107.84
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.137578,
+    "r2_delta": 0.130227,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 8.431424,
+    "mse_delta_pct": -10.2718,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.85,
+      "speedup_factor": 680.0,
+      "original_rotations": 2040,
+      "oblivious_rotations": 3,
+      "accuracy_loss_on_val": -1.3178
+    },
+    "time_ms": 78.32
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.267804,
+    "r2_delta": 0.0,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 9.39663,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 8,
+      "total_trees": 8,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 68.3
+    },
+    "time_ms": 2.63
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.267804,
+    "innovation_r2": -0.236639,
+    "r2_delta": 0.031166,
+    "baseline_mse": 9.39663,
+    "innovation_mse": 9.165639,
+    "mse_delta_pct": -2.4582,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.85,
+      "estimated_latency_ms": 310.3
+    },
+    "time_ms": 198.83
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.428837,
+    "r2_delta": 0.012181,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 10.590162,
+    "mse_delta_pct": -0.8453,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 30,
+      "max_depth": 7,
+      "total_leaves": 720
+    },
+    "time_ms": 179.31
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.441018,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 10.680446,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.9,
+      "min_precision_bits": 13,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.1210059404913005e-05
+    },
+    "time_ms": 4.07
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.538464,
+    "r2_delta": -0.097446,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 11.402687,
+    "mse_delta_pct": 6.7623,
+    "accuracy_preserved_pct": 93.24,
+    "extra_metrics": {
+      "num_active_trees": 22,
+      "pruning_ratio": 0.2667,
+      "total_trees": 30,
+      "computation_saved_pct": 26.67
+    },
+    "time_ms": 3.55
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.441018,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 10.680446,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 0,
+      "coverage_pct": 0,
+      "avg_degree": 0,
+      "avg_leaf_r2": 0
+    },
+    "time_ms": 433.95
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.177484,
+    "r2_delta": 0.263535,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 8.727197,
+    "mse_delta_pct": -18.2881,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.65,
+      "speedup_factor": 282.0,
+      "original_rotations": 1410,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -1.7109
+    },
+    "time_ms": 189.87
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.441018,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 10.680446,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 30,
+      "total_trees": 30,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 60.4
+    },
+    "time_ms": 3.73
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "regression_10f",
+    "baseline_r2": -0.441018,
+    "innovation_r2": -0.441018,
+    "r2_delta": 0.0,
+    "baseline_mse": 10.680446,
+    "innovation_mse": 10.680446,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.65,
+      "estimated_latency_ms": 1410.5
+    },
+    "time_ms": 436.76
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.789263,
+    "r2_delta": 0.15963,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 3.826678,
+    "mse_delta_pct": -8.1908,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 20,
+      "max_depth": 6,
+      "total_leaves": 352
+    },
+    "time_ms": 131.43
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.948893,
+    "r2_delta": 0.0,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 4.168077,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.38,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 2.145520068255693e-05
+    },
+    "time_ms": 4.62
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.820884,
+    "r2_delta": 0.128009,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 3.894306,
+    "mse_delta_pct": -6.5683,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 15,
+      "pruning_ratio": 0.25,
+      "total_trees": 20,
+      "computation_saved_pct": 25.0
+    },
+    "time_ms": 2.44
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.912006,
+    "r2_delta": 0.036887,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 4.089187,
+    "mse_delta_pct": -1.8927,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 37,
+      "coverage_pct": 10.82,
+      "avg_degree": 1.51,
+      "avg_leaf_r2": 0.247
+    },
+    "time_ms": 224.04
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.919119,
+    "r2_delta": 0.029774,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 4.1044,
+    "mse_delta_pct": -1.5277,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.27,
+      "speedup_factor": 136.8,
+      "original_rotations": 684,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -1.8371
+    },
+    "time_ms": 85.39
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.948893,
+    "r2_delta": 0.0,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 4.168077,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 20,
+      "total_trees": 20,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 52.3
+    },
+    "time_ms": 2.26
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "XGBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.948893,
+    "innovation_r2": -0.907162,
+    "r2_delta": 0.041731,
+    "baseline_mse": 4.168077,
+    "innovation_mse": 4.078828,
+    "mse_delta_pct": -2.1413,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.27,
+      "estimated_latency_ms": 910.5
+    },
+    "time_ms": 225.82
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.632481,
+    "r2_delta": 0.172238,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 3.49137,
+    "mse_delta_pct": -9.5437,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 15,
+      "max_depth": 7,
+      "total_leaves": 528
+    },
+    "time_ms": 250.69
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.804718,
+    "r2_delta": 0.0,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 3.859733,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.3,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.9747476549646074e-05
+    },
+    "time_ms": 3.03
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.909707,
+    "r2_delta": -0.104988,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 4.08427,
+    "mse_delta_pct": 5.8174,
+    "accuracy_preserved_pct": 94.18,
+    "extra_metrics": {
+      "num_active_trees": 11,
+      "pruning_ratio": 0.2667,
+      "total_trees": 15,
+      "computation_saved_pct": 26.67
+    },
+    "time_ms": 2.3
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.791098,
+    "r2_delta": 0.01362,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 3.830604,
+    "mse_delta_pct": -0.7547,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 35,
+      "coverage_pct": 6.73,
+      "avg_degree": 1.51,
+      "avg_leaf_r2": 0.2235
+    },
+    "time_ms": 165.25
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.745077,
+    "r2_delta": 0.059642,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 3.732178,
+    "mse_delta_pct": -3.3048,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.62,
+      "speedup_factor": 260.25,
+      "original_rotations": 1041,
+      "oblivious_rotations": 4,
+      "accuracy_loss_on_val": -1.3215
+    },
+    "time_ms": 61.51
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.804718,
+    "r2_delta": 0.0,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 3.859733,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 15,
+      "total_trees": 15,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 60.3
+    },
+    "time_ms": 2.18
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "LightGBM-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.804718,
+    "innovation_r2": -0.804718,
+    "r2_delta": 0.0,
+    "baseline_mse": 3.859733,
+    "innovation_mse": 3.859733,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.62,
+      "estimated_latency_ms": 660.4
+    },
+    "time_ms": 163.85
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -0.800302,
+    "r2_delta": 0.221706,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 3.850287,
+    "mse_delta_pct": -10.9646,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 25,
+      "max_depth": 6,
+      "total_leaves": 528
+    },
+    "time_ms": 14.93
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -1.02274,
+    "r2_delta": -0.000733,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 4.326015,
+    "mse_delta_pct": 0.0363,
+    "accuracy_preserved_pct": 99.96,
+    "extra_metrics": {
+      "avg_precision_bits": 13.98,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 2.8476875631851918e-05
+    },
+    "time_ms": 3.96
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -1.353146,
+    "r2_delta": -0.331138,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 5.032649,
+    "mse_delta_pct": 16.3767,
+    "accuracy_preserved_pct": 83.62,
+    "extra_metrics": {
+      "num_active_trees": 18,
+      "pruning_ratio": 0.28,
+      "total_trees": 25,
+      "computation_saved_pct": 28.0
+    },
+    "time_ms": 3.21
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -1.001304,
+    "r2_delta": 0.020703,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 4.280169,
+    "mse_delta_pct": -1.0239,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 73,
+      "coverage_pct": 14.17,
+      "avg_degree": 1.68,
+      "avg_leaf_r2": 0.2782
+    },
+    "time_ms": 333.02
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -1.440952,
+    "r2_delta": -0.418944,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 5.220439,
+    "mse_delta_pct": 20.7192,
+    "accuracy_preserved_pct": 79.28,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.52,
+      "speedup_factor": 206.2,
+      "original_rotations": 1031,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -1.7765
+    },
+    "time_ms": 128.45
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -1.022007,
+    "r2_delta": 0.0,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 4.324447,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 25,
+      "total_trees": 25,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 52.3
+    },
+    "time_ms": 2.94
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "CatBoost-style",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.022007,
+    "innovation_r2": -1.022007,
+    "r2_delta": 0.0,
+    "baseline_mse": 4.324447,
+    "innovation_mse": 4.324447,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.52,
+      "estimated_latency_ms": 1160.5
+    },
+    "time_ms": 319.52
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -2.617974,
+    "r2_delta": 0.52798,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 7.737725,
+    "mse_delta_pct": -12.7348,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 50,
+      "max_depth": 3,
+      "total_leaves": 200
+    },
+    "time_ms": 36.91
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -3.145953,
+    "r2_delta": 0.0,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 8.866909,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.0,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 2.6863171407212758e-05
+    },
+    "time_ms": 5.35
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -3.866533,
+    "r2_delta": -0.72058,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 10.408006,
+    "mse_delta_pct": 17.3803,
+    "accuracy_preserved_pct": 82.62,
+    "extra_metrics": {
+      "num_active_trees": 37,
+      "pruning_ratio": 0.26,
+      "total_trees": 50,
+      "computation_saved_pct": 26.0
+    },
+    "time_ms": 3.8
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -2.844387,
+    "r2_delta": 0.301567,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 8.221951,
+    "mse_delta_pct": -7.2738,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 27,
+      "coverage_pct": 15.43,
+      "avg_degree": 1.52,
+      "avg_leaf_r2": 0.2406
+    },
+    "time_ms": 606.31
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -1.597494,
+    "r2_delta": 1.548459,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 5.555235,
+    "mse_delta_pct": -37.3487,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "rotation_savings_pct": 98.29,
+      "speedup_factor": 58.333333333333336,
+      "original_rotations": 350,
+      "oblivious_rotations": 6,
+      "accuracy_loss_on_val": -2.7372
+    },
+    "time_ms": 316.79
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -3.145953,
+    "r2_delta": 0.0,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 8.866909,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 50,
+      "total_trees": 50,
+      "needs_bootstrap": false,
+      "estimated_noise_bits": 28.1
+    },
+    "time_ms": 4.22
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Deep-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -3.145953,
+    "innovation_r2": -2.866744,
+    "r2_delta": 0.27921,
+    "baseline_mse": 8.866909,
+    "innovation_mse": 8.269766,
+    "mse_delta_pct": -6.7345,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 98.29,
+      "estimated_latency_ms": 2410.6
+    },
+    "time_ms": 623.28
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.182249,
+    "r2_delta": 0.100517,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 2.528463,
+    "mse_delta_pct": -7.836,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 8,
+      "max_depth": 8,
+      "total_leaves": 1024
+    },
+    "time_ms": 625.22
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.284342,
+    "r2_delta": -0.001576,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 2.746809,
+    "mse_delta_pct": 0.1228,
+    "accuracy_preserved_pct": 99.88,
+    "extra_metrics": {
+      "avg_precision_bits": 14.72,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 1.3580024389350583e-05
+    },
+    "time_ms": 2.88
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.282766,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 2.743439,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 8,
+      "pruning_ratio": 0.0,
+      "total_trees": 8,
+      "computation_saved_pct": 0.0
+    },
+    "time_ms": 1.96
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.254642,
+    "r2_delta": 0.028124,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 2.683291,
+    "mse_delta_pct": -2.1924,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 34,
+      "coverage_pct": 3.33,
+      "avg_degree": 1.5,
+      "avg_leaf_r2": 0.2925
+    },
+    "time_ms": 105.6
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.482494,
+    "r2_delta": -0.199728,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 3.170596,
+    "mse_delta_pct": 15.5701,
+    "accuracy_preserved_pct": 84.43,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.85,
+      "speedup_factor": 680.0,
+      "original_rotations": 2040,
+      "oblivious_rotations": 3,
+      "accuracy_loss_on_val": -1.2406
+    },
+    "time_ms": 43.2
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.282766,
+    "r2_delta": 0.0,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 2.743439,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 8,
+      "total_trees": 8,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 68.3
+    },
+    "time_ms": 1.45
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Wide-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -0.282766,
+    "innovation_r2": -0.278897,
+    "r2_delta": 0.003869,
+    "baseline_mse": 2.743439,
+    "innovation_mse": 2.735164,
+    "mse_delta_pct": -0.3016,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.85,
+      "estimated_latency_ms": 310.3
+    },
+    "time_ms": 121.82
+  },
+  {
+    "innovation": "Leaf-Centric Encoding",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -1.608863,
+    "r2_delta": 0.230588,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 5.57955,
+    "mse_delta_pct": -8.1209,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_trees": 30,
+      "max_depth": 7,
+      "total_leaves": 720
+    },
+    "time_ms": 198.25
+  },
+  {
+    "innovation": "Gradient-Aware Noise",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -1.839451,
+    "r2_delta": 0.0,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 6.072706,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "avg_precision_bits": 14.44,
+      "min_precision_bits": 12,
+      "max_precision_bits": 16,
+      "encode_decode_mae": 2.10671841095578e-05
+    },
+    "time_ms": 4.53
+  },
+  {
+    "innovation": "Homomorphic Pruning",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -1.491052,
+    "r2_delta": 0.348399,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 5.327589,
+    "mse_delta_pct": -12.2699,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_active_trees": 22,
+      "pruning_ratio": 0.2667,
+      "total_trees": 30,
+      "computation_saved_pct": 26.67
+    },
+    "time_ms": 3.41
+  },
+  {
+    "innovation": "Polynomial Leaves",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -1.785715,
+    "r2_delta": 0.053736,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 5.957781,
+    "mse_delta_pct": -1.8925,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_polynomial_leaves": 71,
+      "coverage_pct": 10.07,
+      "avg_degree": 1.54,
+      "avg_leaf_r2": 0.3034
+    },
+    "time_ms": 420.23
+  },
+  {
+    "innovation": "MOAI-Native Conversion",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -2.69077,
+    "r2_delta": -0.851319,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 7.893414,
+    "mse_delta_pct": 29.9818,
+    "accuracy_preserved_pct": 70.02,
+    "extra_metrics": {
+      "rotation_savings_pct": 99.65,
+      "speedup_factor": 282.0,
+      "original_rotations": 1410,
+      "oblivious_rotations": 5,
+      "accuracy_loss_on_val": -2.9278
+    },
+    "time_ms": 190.05
+  },
+  {
+    "innovation": "Bootstrap-Aligned",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -1.839451,
+    "r2_delta": 0.0,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 6.072706,
+    "mse_delta_pct": 0.0,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "num_chunks": 30,
+      "total_trees": 30,
+      "needs_bootstrap": true,
+      "estimated_noise_bits": 60.4
+    },
+    "time_ms": 3.76
+  },
+  {
+    "innovation": "Unified Engine (All)",
+    "model_name": "Mixed-Ensemble",
+    "dataset_name": "highdim_50f",
+    "baseline_r2": -1.839451,
+    "innovation_r2": -1.836553,
+    "r2_delta": 0.002898,
+    "baseline_mse": 6.072706,
+    "innovation_mse": 6.066507,
+    "mse_delta_pct": -0.1021,
+    "accuracy_preserved_pct": 100.0,
+    "extra_metrics": {
+      "innovations_enabled": [
+        "HOMOMORPHIC_PRUNING",
+        "STREAMING_GRADIENTS",
+        "MOAI_NATIVE",
+        "FEDERATED_MULTIKEY",
+        "LEAF_CENTRIC",
+        "GRADIENT_NOISE",
+        "BOOTSTRAP_ALIGNED",
+        "POLYNOMIAL_LEAVES"
+      ],
+      "rotation_savings_pct": 99.65,
+      "estimated_latency_ms": 1410.5
+    },
+    "time_ms": 418.15
+  }
+]

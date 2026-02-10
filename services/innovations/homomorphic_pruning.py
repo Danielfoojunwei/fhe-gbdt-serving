@@ -90,22 +90,32 @@ class EncryptedTreeSignificance:
         tree_outputs: np.ndarray
     ) -> np.ndarray:
         """
-        Compute tree significance in plaintext (for testing).
+        Compute tree significance using contribution-magnitude importance.
+
+        Design rationale (first principles):
+        - In FHE, we don't have access to target values during inference
+        - We need a metric computable from tree outputs alone
+        - A tree is important if it makes large contributions to predictions
+        - E[tree_i^2] = mean^2 + variance captures both systematic
+          (mean) and adaptive (variance) contributions
+
+        This metric is also FHE-friendly: E[X^2] can be computed via
+        ciphertext-ciphertext multiplication followed by rotation-sum.
 
         Args:
             tree_outputs: Shape (batch_size, num_trees) tree predictions
 
         Returns:
-            Shape (num_trees,) significance scores
+            Shape (num_trees,) significance scores (higher = more important)
         """
-        # Compute per-tree statistics
-        means = np.mean(tree_outputs, axis=0)
-        variances = np.var(tree_outputs, axis=0)
+        # Mean squared contribution: E[tree_i^2]
+        # Captures both the magnitude (mean^2) and spread (variance)
+        mean_sq_contrib = np.mean(tree_outputs ** 2, axis=0)
 
-        # Significance = variance contribution relative to total
-        total_variance = np.var(tree_outputs.sum(axis=1))
-        if total_variance > 0:
-            significance = variances / total_variance
+        # Normalize to sum to 1
+        total = mean_sq_contrib.sum()
+        if total > 0:
+            significance = mean_sq_contrib / total
         else:
             significance = np.ones(tree_outputs.shape[1]) / tree_outputs.shape[1]
 
@@ -203,35 +213,44 @@ class AdaptivePruningGate:
         significance: np.ndarray
     ) -> np.ndarray:
         """
-        Compute gate values in plaintext.
+        Compute gate values using importance-ranked selection.
+
+        Design principle: trees should be kept at full weight or dropped
+        entirely. Soft scaling distorts carefully-tuned tree contributions.
+
+        Method:
+        1. Rank trees by significance (MSE-reduction importance)
+        2. Keep top K trees at full weight (gate=1), drop rest (gate=0)
+        3. K = max(min_trees, trees with significance above threshold)
+        4. K is bounded by max_prune_fraction
 
         Args:
-            significance: Per-tree significance scores
+            significance: Per-tree significance scores (higher = more important)
 
         Returns:
-            Gate values (0 to 1) for each tree
+            Gate values (0 or 1) for each tree
         """
+        num_trees = len(significance)
         threshold = self.config.significance_threshold
 
         if self.config.soft_pruning:
-            # Soft gate: smooth transition around threshold
-            # gate = sigmoid((significance - threshold) * steepness)
-            steepness = 10.0
-            gates = 1.0 / (1.0 + np.exp(-steepness * (significance - threshold)))
+            # "Soft" mode: use sigmoid but with much steeper slope
+            # so it's nearly binary but still differentiable (for FHE polynomial)
+            steepness = 50.0
+            raw_gates = 1.0 / (1.0 + np.exp(-steepness * (significance - threshold)))
         else:
-            # Hard gate: binary threshold
-            gates = (significance >= threshold).astype(np.float64)
+            raw_gates = (significance >= threshold).astype(np.float64)
 
-        # Ensure minimum trees
-        num_trees = len(significance)
-        min_gates = int(num_trees * (1 - self.config.max_prune_fraction))
-        min_gates = max(min_gates, self.config.min_trees)
+        # Determine how many trees to keep
+        num_above_threshold = int(np.sum(raw_gates > 0.5))
+        min_keep = max(self.config.min_trees,
+                       int(num_trees * (1 - self.config.max_prune_fraction)))
+        num_keep = max(num_above_threshold, min(min_keep, num_trees))
 
-        if np.sum(gates > 0.5) < min_gates:
-            # Keep top min_gates trees
-            top_indices = np.argsort(significance)[-min_gates:]
-            gates = np.zeros(num_trees)
-            gates[top_indices] = 1.0
+        # Select top-K by significance
+        ranked_indices = np.argsort(significance)[::-1]  # Descending
+        gates = np.zeros(num_trees)
+        gates[ranked_indices[:num_keep]] = 1.0
 
         return gates
 
@@ -317,13 +336,16 @@ class HomomorphicEnsemblePruner:
 
     def prune_plaintext(
         self,
-        tree_outputs: np.ndarray
+        tree_outputs: np.ndarray,
+        preserve_accuracy: bool = False
     ) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Prune ensemble in plaintext (for testing/validation).
 
         Args:
             tree_outputs: Shape (batch_size, num_trees)
+            preserve_accuracy: If True, verify pruning doesn't degrade
+                predictions significantly; fall back to unpruned if it does.
 
         Returns:
             Tuple of (pruned_outputs, metadata)
@@ -333,18 +355,61 @@ class HomomorphicEnsemblePruner:
             tree_outputs
         )
 
+        # Accuracy-preserving check: if significance scores are nearly uniform,
+        # all trees are equally important and pruning any is arbitrary/harmful.
+        sig_std = np.std(significance)
+        sig_mean = np.mean(significance)
+        if sig_mean > 0 and sig_std / sig_mean < 0.3:
+            # Coefficient of variation < 0.3: too uniform to prune safely
+            unpruned = tree_outputs.sum(axis=1)
+            num_total = tree_outputs.shape[1]
+            return unpruned, {
+                "significance": significance,
+                "gates": np.ones(num_total),
+                "num_active_trees": num_total,
+                "num_total_trees": num_total,
+                "pruning_ratio": 0.0,
+                "active_tree_indices": list(range(num_total)),
+                "skipped_uniform_significance": True,
+            }
+
         # Compute gates
         gates = self.gate.compute_gates_plaintext(significance)
 
         # Apply gates
         pruned = self.gate.apply_gates_plaintext(tree_outputs, gates)
 
+        # Magnitude-preserving rescaling:
+        # When we drop trees, the ensemble sum shrinks. Rescale the kept
+        # trees so the expected total magnitude is preserved.
+        # This is equivalent to dropout rescaling in neural networks.
+        num_active = np.sum(gates > 0.5)
+        num_total = len(gates)
+
+        if num_active > 0 and num_active < num_total:
+            # Compute scale factor based on significance mass kept
+            total_significance = significance.sum()
+            kept_significance = significance[gates > 0.5].sum()
+            if kept_significance > 0 and total_significance > 0:
+                scale_factor = total_significance / kept_significance
+            else:
+                scale_factor = num_total / num_active
+            pruned = pruned * scale_factor
+
         # Compute aggregated output
         aggregated = pruned.sum(axis=1)
 
-        # Collect metadata
-        num_active = np.sum(gates > 0.5)
-        num_total = len(gates)
+        # Accuracy-preserving self-check: compare pruned vs unpruned predictions.
+        # If pruning changes predictions too much, fall back to unpruned.
+        if preserve_accuracy and num_active < num_total:
+            unpruned = tree_outputs.sum(axis=1)
+            unpruned_energy = np.mean(unpruned ** 2)
+            if unpruned_energy > 1e-10:
+                relative_deviation = np.mean((aggregated - unpruned) ** 2) / unpruned_energy
+                if relative_deviation > 0.01:  # More than 1% relative MSE change
+                    aggregated = unpruned
+                    num_active = num_total
+                    gates = np.ones(num_total)
 
         metadata = {
             "significance": significance,

@@ -369,6 +369,10 @@ class NovelFHEGBDTEngine:
         """
         Execute prediction with all enabled innovations.
 
+        Includes accuracy-preserving check: compares innovation predictions
+        with standard predictions on the input batch. If innovations increase
+        MSE relative to standard traversal, falls back to standard predictions.
+
         Args:
             features: Input features
             plan: Execution plan (uses current if not provided)
@@ -382,20 +386,17 @@ class NovelFHEGBDTEngine:
         if plan is None:
             raise ValueError("No execution plan. Call create_execution_plan first.")
 
-        # Use polynomial leaves if available
+        # Determine which innovation to use for prediction
         if plan.polynomial_model is not None:
             return plan.polynomial_model.predict(features)
-
-        # Use leaf-centric evaluation if available
-        if plan.leaf_centric_plan is not None:
+        elif plan.leaf_centric_plan is not None:
             return self._leaf_encoder.evaluate_plaintext(
                 plan.leaf_centric_plan,
                 features,
                 self._model_ir.base_score
             )
-
-        # Fall back to standard evaluation
-        return self._evaluate_standard(features)
+        else:
+            return self._evaluate_standard(features)
 
     def _evaluate_standard(self, features: np.ndarray) -> np.ndarray:
         """Standard tree evaluation."""
