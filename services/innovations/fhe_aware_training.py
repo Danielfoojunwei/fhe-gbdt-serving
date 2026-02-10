@@ -509,7 +509,7 @@ class FHEAwareTreeTrainer:
             Tuple of (trees, training_metadata)
         """
         trees = []
-        residuals = y.copy()
+        residuals = y.astype(np.float64).copy()
 
         total_ig_tradeoff = 0.0
         total_margin_penalty = 0.0
