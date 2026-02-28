@@ -1,4 +1,5 @@
 import grpc
+import os
 import time
 from typing import List, Dict
 
@@ -19,6 +20,7 @@ class FHEGBDTClient:
         self.gateway_addr = gateway_addr
         self.tenant_id = tenant_id
         self.key_manager = KeyManager(tenant_id)
+        self.allow_simulation = os.getenv("ALLOW_SDK_SIMULATION", "false").lower() == "true"
         if inference_pb2_grpc:
             self.channel = grpc.insecure_channel(gateway_addr)
             self.stub = inference_pb2_grpc.InferenceServiceStub(self.channel)
@@ -51,11 +53,14 @@ class FHEGBDTClient:
                 # Short timeout for the check
                 response = self.stub.Predict(request, timeout=1.0)
                 return self.key_manager.decrypt(response.outputs.payload)
-            except Exception:
-                # Fallback to High-Fidelity Simulation for Benchmarking
-                return self._simulate_backend_processing(payload)
+            except Exception as exc:
+                if self.allow_simulation:
+                    return self._simulate_backend_processing(payload)
+                raise RuntimeError("Gateway inference failed and simulation is disabled") from exc
         else:
-            return self._simulate_backend_processing(payload)
+            if self.allow_simulation:
+                return self._simulate_backend_processing(payload)
+            raise RuntimeError("Inference gRPC stub unavailable and simulation is disabled")
 
     def _simulate_backend_processing(self, payload: bytes) -> List[float]:
         """Simulates the N2HE C++ backend processing overhead and logic."""

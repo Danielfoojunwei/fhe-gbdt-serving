@@ -2,103 +2,138 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: ["**"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install Python dependencies
-      run: |
-        pip install pytest pytest-cov hypothesis numpy grpcio grpcio-tools bandit flake8
-    - name: Build Go services
-      run: go build ./...
-    - name: Test
-      run: make test
-    - name: Run Security Scan
-      run: bash scripts/security_scan.sh
-    - name: Generate SBOM
-      uses: anchore/sbom-action@v0
-      with:
-        format: spdx-json
-        output-file: sbom.spdx.json
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements-ci-base.txt
+            requirements-ci-ml.txt
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci-base.txt
+      - name: Build Go services
+        run: go build ./...
+      - name: Test
+        run: make test
+      - name: Run Security Scan
+        run: bash scripts/security_scan.sh
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: spdx-json
+          output-file: sbom.spdx.json
 
   guardrails:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install Python dependencies
-      run: |
-        pip install pytest hypothesis
-    - name: Check for forbidden logging patterns
-      run: |
-        echo "Checking for forbidden logging patterns..."
-        FORBIDDEN="payload|ciphertext|plaintext|secret_key|eval_key"
-        if grep -rEi "(log\.|print\(|fmt\.Print).*(${FORBIDDEN})" services/ sdk/ --include="*.go" --include="*.py"; then
-          echo "FAILED: Forbidden logging patterns detected!"
-          exit 1
-        fi
-        echo "PASSED: No forbidden logging patterns found."
-    - name: Run no-plaintext-logs unit test
-      run: |
-        python -m pytest tests/unit/test_no_plaintext_logs.py -v
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements-ci-base.txt
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci-base.txt
+      - name: Check for forbidden logging patterns
+        run: |
+          echo "Checking for forbidden logging patterns..."
+          FORBIDDEN="payload|ciphertext|plaintext|secret_key|eval_key"
+          if rg --line-number --ignore-case --glob '*.go' --glob '*.py' "(log\.|print\(|fmt\.Print).*(${FORBIDDEN})" services/ sdk/; then
+            echo "FAILED: Forbidden logging patterns detected!"
+            exit 1
+          fi
+          echo "PASSED: No forbidden logging patterns found."
+      - name: Run no-plaintext-logs unit test
+        run: |
+          python -m pytest tests/unit/test_no_plaintext_logs.py -v
 
   cookbook-tests:
     runs-on: ubuntu-latest
+    env:
+      ALLOW_SDK_SIMULATION: "true"
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        pip install pytest hypothesis numpy xgboost lightgbm catboost scikit-learn mdutils requests grpcio grpcio-tools
-    - name: Run Cookbook E2E Tests
-      run: |
-        python -m pytest tests/e2e/real_models/ -v
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements-ci-base.txt
+            requirements-ci-ml.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci-ml.txt
+      - name: Run Cookbook E2E Tests
+        run: |
+          python -m pytest tests/e2e/real_models/ -v
 
   integration-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        pip install pytest hypothesis numpy xgboost lightgbm catboost scikit-learn grpcio grpcio-tools
-    - name: Run Integration Tests
-      run: |
-        python -m pytest tests/integration/test_ai_engineer_workflow.py -v
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements-ci-base.txt
+            requirements-ci-ml.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci-ml.txt
+      - name: Run Integration Tests
+        run: |
+          python -m pytest tests/integration/test_ai_engineer_workflow.py -v
 
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        pip install pytest hypothesis numpy
-    - name: Run Unit Tests
-      run: |
-        python -m pytest tests/unit/ -v
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements-ci-base.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci-base.txt
+      - name: Run Unit Tests
+        run: |
+          python -m pytest tests/unit/ -v

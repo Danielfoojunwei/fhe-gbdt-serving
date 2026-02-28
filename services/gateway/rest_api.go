@@ -4,12 +4,18 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	inf_pb "github.com/fhe-gbdt-serving/proto/inference"
+	"github.com/fhe-gbdt-serving/services/gateway/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/otel"
@@ -150,11 +156,11 @@ type PredictRequest struct {
 }
 
 type PredictResponse struct {
-	RequestID     string         `json:"request_id"`
-	ModelID       string         `json:"model_id"`
-	Ciphertext    string         `json:"ciphertext"` // Base64 encoded result
-	Stats         *RuntimeStats  `json:"stats,omitempty"`
-	ProcessedAt   string         `json:"processed_at"`
+	RequestID   string        `json:"request_id"`
+	ModelID     string        `json:"model_id"`
+	Ciphertext  string        `json:"ciphertext"` // Base64 encoded result
+	Stats       *RuntimeStats `json:"stats,omitempty"`
+	ProcessedAt string        `json:"processed_at"`
 }
 
 type RuntimeStats struct {
@@ -181,7 +187,7 @@ type Model struct {
 type RegisterModelRequest struct {
 	Name     string            `json:"name"`
 	Library  string            `json:"library"`
-	Model    string            `json:"model"`    // Base64 encoded model
+	Model    string            `json:"model"` // Base64 encoded model
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
@@ -199,32 +205,32 @@ type CryptoParams struct {
 
 // Training types
 type TrainingJobRequest struct {
-	Name            string              `json:"name"`
-	DatasetPath     string              `json:"dataset_path"`
-	Library         string              `json:"library"`
+	Name            string                 `json:"name"`
+	DatasetPath     string                 `json:"dataset_path"`
+	Library         string                 `json:"library"`
 	Hyperparameters map[string]interface{} `json:"hyperparameters"`
-	DPConfig        *DPConfig           `json:"dp_config,omitempty"`
-	OutputPath      string              `json:"output_path,omitempty"`
+	DPConfig        *DPConfig              `json:"dp_config,omitempty"`
+	OutputPath      string                 `json:"output_path,omitempty"`
 }
 
 type DPConfig struct {
-	Enabled       bool    `json:"enabled"`
-	Epsilon       float64 `json:"epsilon"`
-	Delta         float64 `json:"delta"`
-	NoiseType     string  `json:"noise_type,omitempty"`
-	MaxGradNorm   float64 `json:"max_grad_norm,omitempty"`
+	Enabled     bool    `json:"enabled"`
+	Epsilon     float64 `json:"epsilon"`
+	Delta       float64 `json:"delta"`
+	NoiseType   string  `json:"noise_type,omitempty"`
+	MaxGradNorm float64 `json:"max_grad_norm,omitempty"`
 }
 
 type TrainingJob struct {
-	ID              string                 `json:"id"`
-	Name            string                 `json:"name"`
-	Status          string                 `json:"status"`
-	Progress        float64                `json:"progress"`
-	Metrics         map[string]float64     `json:"metrics,omitempty"`
-	DPSpent         *DPSpent               `json:"dp_spent,omitempty"`
-	StartedAt       string                 `json:"started_at"`
-	CompletedAt     string                 `json:"completed_at,omitempty"`
-	Error           string                 `json:"error,omitempty"`
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Status      string             `json:"status"`
+	Progress    float64            `json:"progress"`
+	Metrics     map[string]float64 `json:"metrics,omitempty"`
+	DPSpent     *DPSpent           `json:"dp_spent,omitempty"`
+	StartedAt   string             `json:"started_at"`
+	CompletedAt string             `json:"completed_at,omitempty"`
+	Error       string             `json:"error,omitempty"`
 }
 
 type DPSpent struct {
@@ -234,18 +240,18 @@ type DPSpent struct {
 
 // Package types
 type CreatePackageRequest struct {
-	ModelID     string   `json:"model_id"`
-	Recipients  []string `json:"recipients,omitempty"`
-	DPCertificate bool   `json:"dp_certificate,omitempty"`
+	ModelID       string   `json:"model_id"`
+	Recipients    []string `json:"recipients,omitempty"`
+	DPCertificate bool     `json:"dp_certificate,omitempty"`
 }
 
 type Package struct {
-	ID           string `json:"id"`
-	ModelID      string `json:"model_id"`
-	Status       string `json:"status"`
-	DownloadURL  string `json:"download_url,omitempty"`
-	Hash         string `json:"hash,omitempty"`
-	CreatedAt    string `json:"created_at"`
+	ID          string `json:"id"`
+	ModelID     string `json:"model_id"`
+	Status      string `json:"status"`
+	DownloadURL string `json:"download_url,omitempty"`
+	Hash        string `json:"hash,omitempty"`
+	CreatedAt   string `json:"created_at"`
 }
 
 // Handler implementations
@@ -258,8 +264,7 @@ func (s *RESTServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *RESTServer) handleReady(w http.ResponseWriter, r *http.Request) {
-	// Check dependencies
-	ready := true // TODO: Check gRPC gateway, registry, etc.
+	ready := s.grpcGateway != nil && s.grpcGateway.registryClient != nil && s.grpcGateway.runtimeClient != nil
 
 	if ready {
 		s.writeJSON(w, http.StatusOK, map[string]string{
@@ -284,35 +289,77 @@ func (s *RESTServer) handlePredict(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate request
 	if req.Ciphertext == "" {
 		s.writeError(w, http.StatusBadRequest, "MISSING_CIPHERTEXT", "ciphertext is required")
 		return
 	}
-
 	if req.ModelID == "" && req.CompiledModelID == "" {
 		s.writeError(w, http.StatusBadRequest, "MISSING_MODEL", "model_id or compiled_model_id is required")
 		return
 	}
 
-	// Get tenant from context
+	payload, err := base64.StdEncoding.DecodeString(req.Ciphertext)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, "INVALID_CIPHERTEXT", "ciphertext must be valid base64")
+		return
+	}
+
+	if s.grpcGateway == nil {
+		s.writeError(w, http.StatusServiceUnavailable, "GATEWAY_UNAVAILABLE", "gateway not initialized")
+		return
+	}
+
 	tenantID := getTenantFromContext(ctx)
 	span.SetAttributes(attribute.String("tenant_id", tenantID))
 
-	// TODO: Forward to gRPC gateway
-	// For now, return mock response
+	grpcCtx := context.WithValue(ctx, auth.TenantContextKey, &auth.TenantContext{TenantID: tenantID})
+	grpcReq := &inf_pb.PredictRequest{
+		TenantId:        tenantID,
+		CompiledModelId: req.CompiledModelID,
+		Profile:         req.Profile,
+		Batch: &inf_pb.CiphertextBatch{
+			SchemeId:  "n2he_default",
+			BatchSize: 1,
+			Payload:   payload,
+		},
+		Meta: req.Metadata,
+	}
+
+	resp, err := s.grpcGateway.Predict(grpcCtx, grpcReq)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok {
+			code := http.StatusInternalServerError
+			switch st.Code() {
+			case codes.InvalidArgument:
+				code = http.StatusBadRequest
+			case codes.PermissionDenied, codes.Unauthenticated:
+				code = http.StatusForbidden
+			case codes.Unavailable:
+				code = http.StatusServiceUnavailable
+			}
+			s.writeError(w, code, "PREDICT_FAILED", st.Message())
+			return
+		}
+		s.writeError(w, http.StatusInternalServerError, "PREDICT_FAILED", err.Error())
+		return
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(resp.GetOutputs().GetPayload())
 	response := PredictResponse{
 		RequestID:   getRequestIDFromContext(ctx),
 		ModelID:     req.ModelID,
-		Ciphertext:  "base64_encrypted_result...",
+		Ciphertext:  encoded,
 		ProcessedAt: time.Now().UTC().Format(time.RFC3339),
-		Stats: &RuntimeStats{
-			Comparisons:    6400,
-			SchemeSwitches: 200,
-			Bootstraps:     0,
-			Rotations:      12,
-			RuntimeMs:      62.5,
-		},
+	}
+	if resp.GetStats() != nil {
+		response.Stats = &RuntimeStats{
+			Comparisons:    resp.GetStats().GetComparisons(),
+			SchemeSwitches: resp.GetStats().GetSchemeSwitches(),
+			Bootstraps:     resp.GetStats().GetBootstraps(),
+			Rotations:      resp.GetStats().GetRotations(),
+			RuntimeMs:      resp.GetStats().GetRuntimeMs(),
+		}
 	}
 
 	s.writeJSON(w, http.StatusOK, SuccessResponse{Data: response})

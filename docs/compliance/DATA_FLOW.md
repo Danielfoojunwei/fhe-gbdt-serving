@@ -383,3 +383,38 @@ In case of security incident:
 *Last Updated*: February 4, 2026
 *Next Review*: May 4, 2026
 *Owner*: Security & Compliance Team
+
+---
+
+## Canonical Implementation Notes (Current Repository State)
+
+This section clarifies implementation-backed behavior to keep this document empirical.
+
+### A) Inference Request Path
+
+1. Client submits base64 ciphertext to REST `/v1/predict`.
+2. REST layer decodes and forwards request to gateway gRPC predict.
+3. Gateway enforces auth/license/ownership checks and forwards to runtime.
+4. Runtime response ciphertext is returned (base64 encoded) to client.
+
+### B) Failure Semantics
+
+- Runtime disconnect is a hard error (`Unavailable`) and does not trigger gateway simulation fallback.
+- Readiness is dependency-aware and may return non-ready if runtime/registry wiring is absent.
+
+### C) Eval-Key Storage Semantics
+
+- Keystore stores encrypted eval-key records in `KEYSTORE_STORAGE_DIR`.
+- Record format includes encryption mode prefix:
+  - `vault:<ciphertext>` when Vault transit is available.
+  - `local:<base64-envelope>` for local non-production fallback mode.
+- Retrieval performs corresponding decrypt path and returns plaintext eval keys to authorized caller.
+
+### D) Model Artifact Storage Semantics
+
+- Registry persists model content to `REGISTRY_STORAGE_DIR` before DB metadata registration.
+- Metadata persistence failure is treated as registration failure (fail-closed).
+
+### E) SDK Policy
+
+- SDK simulation mode is opt-in via `ALLOW_SDK_SIMULATION=true`; production baseline is non-simulated error-on-failure behavior.
