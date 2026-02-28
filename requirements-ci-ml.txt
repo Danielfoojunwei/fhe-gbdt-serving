@@ -1,0 +1,7 @@
+-r requirements-ci-base.txt
+xgboost
+lightgbm
+catboost
+scikit-learn
+mdutils
+requests

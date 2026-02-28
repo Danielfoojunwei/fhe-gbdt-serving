@@ -6,32 +6,38 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 
+	pb "github.com/fhe-gbdt-serving/proto/control"
+	"github.com/fhe-gbdt-serving/services/registry/db"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pb "github.com/fhe-gbdt-serving/proto/control"
-	"github.com/fhe-gbdt-serving/services/registry/db"
 )
 
 type controlServer struct {
 	pb.UnimplementedControlServiceServer
-	// In-memory store as fallback when DB is not available
 	models   map[string]*pb.RegisterModelRequest
 	compiled map[string]*pb.GetCompileStatusResponse
-	
-	// Database store (nil if not available)
-	store *db.Store
+	store    *db.Store
+	dataDir  string
 }
 
 func newControlServer() *controlServer {
 	server := &controlServer{
 		models:   make(map[string]*pb.RegisterModelRequest),
 		compiled: make(map[string]*pb.GetCompileStatusResponse),
+		dataDir:  os.Getenv("REGISTRY_STORAGE_DIR"),
 	}
-	
-	// Try to connect to database
+	if server.dataDir == "" {
+		server.dataDir = "./data/registry"
+	}
+	if err := os.MkdirAll(server.dataDir, 0o700); err != nil {
+		log.Fatalf("failed to create registry storage dir %s: %v", server.dataDir, err)
+	}
+
 	store, err := db.NewStore()
 	if err != nil {
 		log.Printf("WARN: Database not available, using in-memory storage: %v", err)
@@ -39,91 +45,96 @@ func newControlServer() *controlServer {
 		log.Printf("Connected to PostgreSQL database")
 		server.store = store
 	}
-	
+
 	return server
+}
+
+func sanitizePathPart(v string) string {
+	v = strings.ReplaceAll(v, "/", "_")
+	v = strings.ReplaceAll(v, "..", "_")
+	return v
+}
+
+func (s *controlServer) persistModelContent(tenantID, modelID string, content []byte) (string, error) {
+	path := filepath.Join(s.dataDir, "models", sanitizePathPart(tenantID))
+	if err := os.MkdirAll(path, 0o700); err != nil {
+		return "", err
+	}
+	file := filepath.Join(path, modelID+".bin")
+	if err := os.WriteFile(file, content, 0o600); err != nil {
+		return "", err
+	}
+	return file, nil
 }
 
 func (s *controlServer) RegisterModel(ctx context.Context, req *pb.RegisterModelRequest) (*pb.RegisterModelResponse, error) {
 	if req.ModelContent == nil || len(req.ModelContent) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "model content cannot be empty")
 	}
+	if req.TenantId == "" || req.ModelName == "" || req.LibraryType == "" {
+		return nil, status.Error(codes.InvalidArgument, "tenant_id, model_name and library_type are required")
+	}
 
 	modelID := uuid.New().String()
 	log.Printf("AUDIT: Registering model %s (ID: %s) for tenant %s", req.ModelName, modelID, req.TenantId)
-	
+
+	contentPath, err := s.persistModelContent(req.TenantId, modelID, req.ModelContent)
+	if err != nil {
+		log.Printf("ERROR: Failed to persist model content: %v", err)
+		return nil, status.Error(codes.Internal, "failed to persist model content")
+	}
+
 	if s.store != nil {
-		// Ensure tenant exists
 		if err := s.store.EnsureTenant(ctx, req.TenantId); err != nil {
 			log.Printf("WARN: Failed to ensure tenant: %v", err)
 		}
-		
-		// Store in database
-		// TODO: Upload model content to MinIO and store path
-		contentPath := fmt.Sprintf("models/%s/%s.bin", req.TenantId, modelID)
-		dbModelID, err := s.store.CreateModel(ctx, req.TenantId, req.ModelName, req.LibraryType, contentPath)
-		if err != nil {
-			log.Printf("ERROR: Failed to persist model: %v", err)
-			// Fall back to in-memory
-			s.models[modelID] = req
-		} else {
-			modelID = dbModelID
+		dbModelID, dberr := s.store.CreateModel(ctx, req.TenantId, req.ModelName, req.LibraryType, contentPath)
+		if dberr != nil {
+			log.Printf("ERROR: Failed to persist model metadata: %v", dberr)
+			return nil, status.Error(codes.Internal, "failed to persist model metadata")
 		}
-	} else {
-		// In-memory fallback
-		s.models[modelID] = req
+		modelID = dbModelID
 	}
 
+	s.models[modelID] = req
 	return &pb.RegisterModelResponse{ModelId: modelID}, nil
 }
 
 func (s *controlServer) CompileModel(ctx context.Context, req *pb.CompileModelRequest) (*pb.CompileModelResponse, error) {
 	log.Printf("AUDIT: Compiling model %s for profile %s", req.ModelId, req.Profile)
-	
-	// Check model exists
+
 	if s.store != nil {
 		model, err := s.store.GetModel(ctx, req.ModelId)
 		if err != nil {
 			log.Printf("ERROR: Failed to get model: %v", err)
 		}
 		if model == nil {
-			// Check in-memory fallback
 			if _, ok := s.models[req.ModelId]; !ok {
 				return nil, status.Errorf(codes.NotFound, "model %s not found", req.ModelId)
 			}
 		}
-	} else {
-		if _, ok := s.models[req.ModelId]; !ok {
-			return nil, status.Errorf(codes.NotFound, "model %s not found", req.ModelId)
-		}
+	} else if _, ok := s.models[req.ModelId]; !ok {
+		return nil, status.Errorf(codes.NotFound, "model %s not found", req.ModelId)
 	}
 
 	compiledID := uuid.New().String()
 	planID := fmt.Sprintf("plan-%s", uuid.New().String()[:8])
 
 	if s.store != nil {
-		// Store in database
-		planPath := fmt.Sprintf("plans/%s.bin", compiledID)
+		planPath := filepath.Join(s.dataDir, "plans", compiledID+".bin")
+		if err := os.MkdirAll(filepath.Dir(planPath), 0o700); err != nil {
+			return nil, status.Error(codes.Internal, "failed to initialize plan storage")
+		}
 		dbCompiledID, err := s.store.CreateCompiledModel(ctx, req.ModelId, req.Profile, planID, planPath)
 		if err != nil {
 			log.Printf("ERROR: Failed to persist compiled model: %v", err)
-			// Fall back to in-memory
-			s.compiled[compiledID] = &pb.GetCompileStatusResponse{
-				Status: "successful",
-				PlanId: planID,
-			}
-		} else {
-			compiledID = dbCompiledID
-			// Mark as successful (in real system, this would be async)
-			s.store.UpdateCompiledModelStatus(ctx, compiledID, "successful", "")
+			return nil, status.Error(codes.Internal, "failed to persist compiled model")
 		}
-	} else {
-		// In-memory fallback
-		s.compiled[compiledID] = &pb.GetCompileStatusResponse{
-			Status: "successful",
-			PlanId: planID,
-		}
+		compiledID = dbCompiledID
+		_ = s.store.UpdateCompiledModelStatus(ctx, compiledID, "successful", "")
 	}
 
+	s.compiled[compiledID] = &pb.GetCompileStatusResponse{Status: "successful", PlanId: planID}
 	return &pb.CompileModelResponse{CompiledModelId: compiledID}, nil
 }
 
@@ -134,14 +145,10 @@ func (s *controlServer) GetCompileStatus(ctx context.Context, req *pb.GetCompile
 			log.Printf("ERROR: Failed to get compiled model: %v", err)
 		}
 		if cm != nil {
-			return &pb.GetCompileStatusResponse{
-				Status: cm.Status,
-				PlanId: cm.PlanID,
-			}, nil
+			return &pb.GetCompileStatusResponse{Status: cm.Status, PlanId: cm.PlanID}, nil
 		}
 	}
-	
-	// Check in-memory fallback
+
 	resp, ok := s.compiled[req.CompiledModelId]
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "compiled model %s not found", req.CompiledModelId)
@@ -154,19 +161,18 @@ func main() {
 	if port == "" {
 		port = "8081"
 	}
-	
+
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	
+
 	server := newControlServer()
 	s := grpc.NewServer()
 	pb.RegisterControlServiceServer(s, server)
-	
+
 	log.Printf("Production Registry Service listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
-

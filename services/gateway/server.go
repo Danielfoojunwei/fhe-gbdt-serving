@@ -7,19 +7,19 @@ import (
 	"os"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
+	pb_ctrl "github.com/fhe-gbdt-serving/proto/control"
+	inf_pb "github.com/fhe-gbdt-serving/proto/inference"
 	"github.com/fhe-gbdt-serving/services/gateway/auth"
 	"github.com/fhe-gbdt-serving/services/gateway/interceptors"
 	"github.com/fhe-gbdt-serving/services/gateway/license"
 	"github.com/fhe-gbdt-serving/services/gateway/mtls"
 	"github.com/fhe-gbdt-serving/services/gateway/telemetry"
-	pb_ctrl "github.com/fhe-gbdt-serving/proto/control"
-	inf_pb "github.com/fhe-gbdt-serving/proto/inference"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type gatewayServer struct {
@@ -94,25 +94,12 @@ func (s *gatewayServer) Predict(ctx context.Context, req *inf_pb.PredictRequest)
 		return resp, nil
 	}
 
-	// Fallback: High-fidelity simulation when runtime is not connected
-	// This allows SDK/benchmark testing without full stack
-	log.Printf("WARN: Runtime not connected, using simulation mode")
-	time.Sleep(12 * time.Millisecond) // Simulate FHE processing
 	latencyMs := float64(time.Since(start).Milliseconds())
-
-	// Record simulated prediction in heartbeat
 	if s.heartbeat != nil {
-		s.heartbeat.RecordPrediction(req.CompiledModelId, latencyMs, true)
+		s.heartbeat.RecordPrediction(req.CompiledModelId, latencyMs, false)
 	}
-
-	return &inf_pb.PredictResponse{
-		Outputs: &inf_pb.CiphertextBatch{
-			Payload: req.Batch.Payload, // Echo back for loopback testing
-		},
-		Stats: &inf_pb.RuntimeStats{
-			RuntimeMs: float64(time.Since(start).Milliseconds()),
-		},
-	}, nil
+	log.Printf("ERROR: Runtime not connected; refusing simulation fallback")
+	return nil, status.Error(codes.Unavailable, "runtime unavailable")
 }
 
 // extractLicenseToken gets the license token from gRPC metadata.

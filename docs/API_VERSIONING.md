@@ -328,3 +328,34 @@ For API versioning questions:
 *Last Updated*: February 4, 2026
 *Next Review*: August 4, 2026
 *Owner*: Platform Engineering Team
+
+---
+
+## 12. Canonical Runtime Behavior Notes (Current Implementation)
+
+This section documents behavior that integrators should treat as canonical for current versions.
+
+### 12.1 Predict Endpoint Behavior
+
+- `POST /v1/predict` accepts base64 ciphertext.
+- Requests are forwarded to gRPC inference; mock response behavior is not part of current contract.
+- If runtime is disconnected/unavailable, clients should expect service-unavailable failure rather than simulated success.
+
+### 12.2 Readiness Behavior
+
+- `GET /v1/ready` is dependency-aware.
+- Returns ready only when gateway, registry client wiring, and runtime client wiring are present.
+
+### 12.3 SDK Simulation Policy
+
+- Python SDK simulation fallback is opt-in only via `ALLOW_SDK_SIMULATION=true`.
+- Production deployments should keep this unset/false.
+
+### 12.4 Error Mapping Expectations
+
+For REST predict responses mapped from gRPC:
+
+- `InvalidArgument` -> HTTP `400`
+- `PermissionDenied` / `Unauthenticated` -> HTTP `403`
+- `Unavailable` -> HTTP `503`
+- Other failures -> HTTP `500`
