@@ -80,6 +80,8 @@ jobs:
 
   cookbook-tests:
     runs-on: ubuntu-latest
+    env:
+      ALLOW_SDK_SIMULATION: "true"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
