@@ -10,7 +10,7 @@
 
 ## Executive Brief for CISOs
 
-Most AI deployments still decrypt sensitive inputs in application memory. That design creates a broad blast radius across logs, caches, APM tooling, support workflows, and incident response handling. Our platform changes the trust boundary: data is encrypted client-side, processed in encrypted form, and only decrypted by the data owner.
+Most classical ML deployments still decrypt sensitive inputs in application memory. That design creates a broad blast radius across logs, caches, APM tooling, support workflows, and incident response handling. Our platform changes the trust boundary: data is encrypted client-side, processed in encrypted form, and only decrypted by the data owner.
 
 ### Why this matters now
 
